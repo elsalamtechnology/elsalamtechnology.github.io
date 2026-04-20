@@ -1357,7 +1357,7 @@ async function submitFeedback(){
   const payload = { name, email, type, app: app || 'General', rating: rating || 'N/A', message: msg };
 
   /* If no Apps Script URL configured, show mailto fallback */
-  if(APPS_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbyRkqB1OpE_OXv9GjL5D5FCLffV-BNDt88YVBilC1ZYgtH2-V8pVRDs60eTHdDKF1GP/exec'){
+  if(APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_DEPLOYMENT_URL_HERE'){
     const subject = encodeURIComponent(`[${type.toUpperCase()}] Feedback from ${name}`);
     const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\nType: ${type}\nApp: ${app}\nRating: ${rating}/5\n\nMessage:\n${msg}`);
     window.location.href = `mailto:elsalamtechnology@gmail.com?subject=${subject}&body=${body}`;

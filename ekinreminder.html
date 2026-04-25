@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>eKin Reminder — El-Salam Technology</title>
+  <meta name="description" content="App description goes here." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23cc0022'/%3E%3Cpath d='M32 8 A24 24 0 0 1 56 32 L32 32 Z' fill='white' opacity='0.95'/%3E%3Cpath d='M32 56 A24 24 0 0 1 8 32 L32 32 Z' fill='white' opacity='0.95'/%3E%3Cpath d='M32 8 L40 28 L24 28 Z' fill='%234caf50'/%3E%3Cline x1='32' y1='8' x2='32' y2='56' stroke='%23cc0022' stroke-width='2'/%3E%3Cline x1='8' y1='32' x2='56' y2='32' stroke='%23cc0022' stroke-width='2'/%3E%3C/svg%3E" />
+
+  <!-- ════════════════════════════════════════
+       ✏️  PANDUAN KUSTOMISASI
+       ════════════════════════════════════════
+       Cari komentar [EDIT] untuk bagian yang perlu diubah:
+       • Nama app, versi, kategori
+       • Deskripsi singkat & panjang
+       • Warna aksen utama (--accent)
+       • Gambar screenshot (ganti src di .phone-img)
+       • Fitur-fitur aplikasi
+       • Spesifikasi teknis
+       • Link Google Play
+       ════════════════════════════════════════ -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ══════════════════════════════════════════
+       [EDIT] Ganti --accent untuk warna tema app
+       Contoh: #ff6b35 (orange), #7c3aed (purple),
+               #0ea5e9 (blue), #10b981 (green)
+    ══════════════════════════════════════════ */
+    :root {
+      --accent:       #00e5ff;      /* warna utama app */
+      --accent2:      #00ff88;      /* warna aksen kedua */
+      --accent-red:   #ff3355;
+      --deep:         #020810;
+      --panel:        rgba(0,20,40,0.80);
+      --border:       rgba(0,229,255,0.18);
+      --text:         #e8f4ff;
+      --muted:        #7da8c8;
+      --font-d:       'Orbitron', monospace;
+      --font-b:       'Rajdhani', sans-serif;
+      --font-m:       'Space Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--deep);
+      color: var(--text);
+      font-family: var(--font-b);
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* ── CURSOR ── */
+    .cur-dot { width:8px;height:8px;background:var(--accent);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);box-shadow:0 0 12px var(--accent); }
+    .cur-ring { width:34px;height:34px;border:1.5px solid rgba(0,229,255,0.5);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:transform .18s ease,width .2s,height .2s; }
+
+    /* ── CANVAS & OVERLAYS ── */
+    #cv { position:fixed;inset:0;z-index:0;pointer-events:none; }
+    .grid { position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(0,229,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.025) 1px,transparent 1px);background-size:55px 55px; }
+
+    /* ── NAV ── */
+    nav {
+      position:fixed;top:0;left:0;right:0;z-index:100;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:16px 5%;
+      background:rgba(2,8,16,0.85);
+      backdrop-filter:blur(18px);
+      border-bottom:1px solid var(--border);
+    }
+    .nav-logo { display:flex;align-items:center;gap:10px;text-decoration:none; }
+    .nav-logo-ico {
+      width:38px;height:38px;border-radius:50%;
+      background:#cc0022;box-shadow:0 0 18px rgba(204,0,34,0.5);
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    }
+    .nav-brand { font-family:var(--font-d);font-size:.75rem;font-weight:700;letter-spacing:.1em;line-height:1.2; }
+    .nav-brand span { color:var(--accent); }
+    .nav-right { display:flex;align-items:center;gap:1.5rem; }
+    .nav-back {
+      font-family:var(--font-m);font-size:.62rem;letter-spacing:.15em;
+      color:var(--muted);text-decoration:none;
+      transition:color .25s;
+    }
+    .nav-back:hover { color:var(--accent); }
+    .nav-play {
+      font-family:var(--font-d);font-size:.62rem;font-weight:700;letter-spacing:.12em;
+      color:#020810;background:var(--accent);border:none;padding:8px 18px;
+      clip-path:polygon(7px 0%,100% 0%,calc(100% - 7px) 100%,0% 100%);
+      cursor:none;text-decoration:none;
+      box-shadow:0 0 16px rgba(0,229,255,0.4);
+      transition:box-shadow .25s;
+    }
+    .nav-play:hover { box-shadow:0 0 28px rgba(0,229,255,0.7); }
+
+    /* ── WRAPPER ── */
+    .wrap { position:relative;z-index:1; }
+
+    /* ══════════════════════════════════════════════
+       HERO
+    ══════════════════════════════════════════════ */
+    .hero {
+      min-height:100vh;
+      display:grid;grid-template-columns:1fr 1fr;
+      align-items:center;gap:4rem;
+      padding:120px 7% 80px;
+      position:relative;overflow:hidden;
+    }
+    .hero-glow {
+      position:absolute;inset:0;pointer-events:none;
+      background:
+        radial-gradient(ellipse 70% 60% at 70% 50%,rgba(0,229,255,0.07) 0%,transparent 70%),
+        radial-gradient(ellipse 40% 40% at 10% 80%,rgba(0,255,136,0.05) 0%,transparent 60%);
+    }
+    .hero-content { animation:fadeUp .8s .2s both; }
+    .app-badge-row { display:flex;align-items:center;gap:.8rem;margin-bottom:1.5rem;flex-wrap:wrap; }
+    .badge {
+      font-family:var(--font-m);font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;
+      padding:5px 12px;border:1px solid;
+    }
+    .badge-new   { color:var(--accent2);border-color:rgba(0,255,136,0.35); }
+    .badge-cat   { color:var(--accent);border-color:rgba(0,229,255,0.35); }
+    .badge-free  { color:#f59e0b;border-color:rgba(245,158,11,0.35); }
+    .badge-ver   { color:var(--muted);border-color:rgba(125,168,200,0.2); }
+
+    .hero-appname {
+      font-family:var(--font-d);
+      font-size:clamp(2.2rem,5.5vw,4.2rem);
+      font-weight:900;line-height:.95;
+      margin-bottom:.8rem;
+    }
+    /* [EDIT] Nama aplikasi */
+    .hero-appname .name-main { display:block;color:var(--text); }
+    .hero-appname .name-sub  { display:block;color:var(--accent);font-size:55%;letter-spacing:.15em;margin-top:.3em; }
+
+    .hero-tagline {
+      font-size:1.15rem;color:var(--muted);line-height:1.7;
+      max-width:480px;margin-bottom:2rem;
+    }
+    .hero-tagline strong { color:var(--accent); }
+
+    .hero-meta {
+      display:flex;gap:1.5rem;margin-bottom:2rem;flex-wrap:wrap;
+    }
+    .meta-item { display:flex;flex-direction:column;gap:2px; }
+    .meta-val { font-family:var(--font-d);font-size:.95rem;font-weight:700;color:var(--accent); }
+    .meta-key { font-size:.72rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase; }
+
+    .hero-actions { display:flex;gap:1rem;flex-wrap:wrap; }
+    .btn-primary {
+      font-family:var(--font-d);font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+      color:#020810;background:linear-gradient(135deg,var(--accent),var(--accent2));
+      border:none;padding:13px 28px;
+      clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);
+      cursor:none;text-decoration:none;display:inline-block;
+      box-shadow:0 0 28px rgba(0,229,255,0.4);
+      transition:box-shadow .3s,transform .2s;
+    }
+    .btn-primary:hover { box-shadow:0 0 48px rgba(0,229,255,0.7);transform:translateY(-2px); }
+    .btn-outline {
+      font-family:var(--font-d);font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+      color:var(--accent);background:transparent;
+      border:1px solid rgba(0,229,255,0.35);padding:12px 28px;
+      clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);
+      cursor:none;text-decoration:none;display:inline-block;
+      transition:background .3s,box-shadow .3s,transform .2s;
+    }
+    .btn-outline:hover { background:rgba(0,229,255,0.08);box-shadow:0 0 20px rgba(0,229,255,0.2);transform:translateY(-2px); }
+
+    /* ── PHONE FRAME (HERO) ── */
+    .hero-phone { animation:fadeUp .9s .4s both;display:flex;justify-content:center;align-items:center;position:relative; }
+    .phone-glow-bg {
+      position:absolute;width:320px;height:320px;border-radius:50%;
+      background:radial-gradient(circle,rgba(0,229,255,0.12),transparent 70%);
+      filter:blur(40px);
+    }
+    .phone-frame {
+      position:relative;width:260px;
+      background:linear-gradient(160deg,#1a2535,#0d1520);
+      border-radius:38px;
+      padding:14px 12px;
+      border:1.5px solid rgba(0,229,255,0.25);
+      box-shadow:
+        0 0 0 1px rgba(0,0,0,0.5),
+        0 0 60px rgba(0,229,255,0.12),
+        inset 0 1px 0 rgba(255,255,255,0.06);
+      animation:float 5s ease-in-out infinite;
+    }
+    /* notch */
+    .phone-notch {
+      width:90px;height:22px;background:#0a1220;
+      border-radius:0 0 14px 14px;
+      margin:0 auto 10px;
+      display:flex;align-items:center;justify-content:center;
+      position:relative;z-index:1;
+    }
+    .notch-cam { width:8px;height:8px;border-radius:50%;background:#1a2a3a;border:1px solid rgba(255,255,255,0.08); }
+    /* screen */
+    .phone-screen {
+      border-radius:28px;overflow:hidden;
+      aspect-ratio:9/19.5;
+      background:#0d1520;
+      position:relative;
+    }
+    /* [EDIT] Ganti src dengan URL/path screenshot app kamu */
+    .phone-img {
+      width:100%;height:100%;object-fit:cover;
+      display:block;
+    }
+    /* placeholder jika belum ada gambar */
+    .phone-placeholder {
+      width:100%;height:100%;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      background:linear-gradient(160deg,#0d1a2e,#091220);
+      gap:12px;color:var(--muted);
+    }
+    .phone-placeholder .ph-icon { font-size:3rem;opacity:.5; }
+    .phone-placeholder p { font-family:var(--font-m);font-size:.58rem;letter-spacing:.15em;text-align:center;opacity:.5;line-height:1.6;padding:0 12px; }
+    /* home button indicator */
+    .phone-btn {
+      width:36px;height:5px;border-radius:3px;
+      background:rgba(255,255,255,0.08);
+      margin:10px auto 0;
+    }
+    /* side buttons */
+    .phone-frame::before {
+      content:'';position:absolute;right:-3px;top:80px;width:3px;height:36px;
+      background:linear-gradient(180deg,#1a2535,#0d1520);
+      border-radius:0 3px 3px 0;
+      border:1px solid rgba(0,229,255,0.15);
+    }
+    .phone-frame::after {
+      content:'';position:absolute;left:-3px;top:70px;width:3px;height:26px;
+      background:linear-gradient(180deg,#1a2535,#0d1520);
+      border-radius:3px 0 0 3px;
+      border:1px solid rgba(0,229,255,0.15);
+    }
+    /* orbit ring */
+    .phone-orbit {
+      position:absolute;border-radius:50%;
+      border:1px dashed rgba(0,229,255,0.12);
+      pointer-events:none;
+    }
+    .phone-orbit-1 { width:340px;height:340px;top:50%;left:50%;transform:translate(-50%,-50%);animation:spinOrbit 18s linear infinite; }
+    .phone-orbit-2 { width:420px;height:420px;top:50%;left:50%;transform:translate(-50%,-50%);animation:spinOrbit 28s linear infinite reverse; }
+    .o-dot { width:7px;height:7px;border-radius:50%;position:absolute;top:0;left:50%;transform:translateX(-50%) translateY(-50%); }
+    .o-dot-c { background:var(--accent);box-shadow:0 0 10px var(--accent); }
+    .o-dot-g { background:var(--accent2);box-shadow:0 0 10px var(--accent2); }
+
+    /* ══════════════════════════════════════════════
+       SCREENSHOTS CAROUSEL
+    ══════════════════════════════════════════════ */
+    .screenshots { padding:80px 7%;background:rgba(0,229,255,0.02); }
+    .sec-label { font-family:var(--font-m);font-size:.62rem;letter-spacing:.3em;color:var(--accent2);margin-bottom:.6rem; }
+    .sec-title { font-family:var(--font-d);font-size:clamp(1.6rem,3.5vw,2.6rem);font-weight:700;line-height:1.1;margin-bottom:.8rem; }
+    .sec-title em { color:var(--accent);font-style:normal; }
+    .sec-desc { font-size:1rem;color:var(--muted);max-width:520px;line-height:1.7;margin-bottom:3rem; }
+
+    .screens-track {
+      display:flex;gap:1.5rem;overflow-x:auto;padding-bottom:1rem;
+      scroll-snap-type:x mandatory;
+      scrollbar-width:thin;
+      scrollbar-color:rgba(0,229,255,0.3) rgba(0,20,40,0.5);
+    }
+    .screens-track::-webkit-scrollbar { height:4px; }
+    .screens-track::-webkit-scrollbar-track { background:rgba(0,20,40,0.5); }
+    .screens-track::-webkit-scrollbar-thumb { background:rgba(0,229,255,0.3);border-radius:2px; }
+
+    .screen-item {
+      flex:0 0 auto;scroll-snap-align:start;
+      position:relative;
+    }
+    /* mini phone frame untuk carousel */
+    .mini-phone {
+      width:160px;
+      background:linear-gradient(160deg,#1a2535,#0d1520);
+      border-radius:24px;padding:10px 8px;
+      border:1px solid rgba(0,229,255,0.2);
+      box-shadow:0 8px 32px rgba(0,229,255,0.08);
+      transition:transform .3s,box-shadow .3s;
+    }
+    .mini-phone:hover { transform:translateY(-8px) scale(1.02);box-shadow:0 20px 50px rgba(0,229,255,0.15); }
+    .mini-notch { width:50px;height:14px;background:#0a1220;border-radius:0 0 8px 8px;margin:0 auto 6px; }
+    .mini-screen {
+      border-radius:16px;overflow:hidden;
+      aspect-ratio:9/19.5;background:#0d1520;
+    }
+    /* [EDIT] Ganti src pada setiap .screen-img dengan screenshot app */
+    .screen-img { width:100%;height:100%;object-fit:cover; }
+    .screen-placeholder {
+      width:100%;height:100%;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      gap:6px;
+      background:linear-gradient(160deg,#0d1a2e,#091220);
+    }
+    .screen-placeholder .sph-icon { font-size:1.8rem;opacity:.4; }
+    .screen-placeholder p { font-family:var(--font-m);font-size:.5rem;color:var(--muted);opacity:.5;letter-spacing:.1em;text-align:center;padding:0 8px; }
+    .mini-btn { width:22px;height:4px;border-radius:2px;background:rgba(255,255,255,0.07);margin:6px auto 0; }
+    .screen-label {
+      text-align:center;margin-top:.7rem;
+      font-size:.8rem;color:var(--muted);font-weight:500;
+    }
+
+    /* ══════════════════════════════════════════════
+       FEATURES
+    ══════════════════════════════════════════════ */
+    .features { padding:80px 7%; }
+    .feat-grid {
+      display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+      gap:1.2rem;margin-top:3rem;
+    }
+    .feat-card {
+      padding:1.8rem;
+      border:1px solid rgba(0,229,255,0.1);
+      position:relative;overflow:hidden;
+      transition:border-color .3s,background .3s,transform .3s;
+      background:rgba(0,15,30,0.4);
+    }
+    .feat-card::before {
+      content:'';position:absolute;top:0;left:0;width:3px;height:100%;
+      background:linear-gradient(180deg,var(--accent),var(--accent2));
+      transform:scaleY(0);transform-origin:top;
+      transition:transform .4s ease;
+    }
+    .feat-card:hover { border-color:rgba(0,229,255,0.28);background:rgba(0,229,255,0.04);transform:translateX(4px); }
+    .feat-card:hover::before { transform:scaleY(1); }
+    .feat-ico { font-size:2rem;margin-bottom:1rem;display:block; }
+    .feat-title { font-family:var(--font-d);font-size:.82rem;font-weight:700;letter-spacing:.05em;margin-bottom:.5rem; }
+    .feat-desc { font-size:.9rem;color:var(--muted);line-height:1.65; }
+
+    /* ══════════════════════════════════════════════
+       HOW IT WORKS / STEPS
+    ══════════════════════════════════════════════ */
+    .howto { padding:80px 7%;background:rgba(0,255,136,0.015); }
+    .steps { display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1.5rem;margin-top:3rem;position:relative; }
+    .steps::before {
+      content:'';position:absolute;top:36px;left:0;right:0;height:1px;
+      background:linear-gradient(90deg,transparent,var(--accent),transparent);
+      opacity:.2;
+    }
+    .step {
+      text-align:center;padding:2rem 1.5rem;
+      border:1px solid rgba(0,229,255,0.08);
+      background:var(--panel);
+      transition:border-color .3s,box-shadow .3s;
+    }
+    .step:hover { border-color:rgba(0,229,255,0.25);box-shadow:0 8px 32px rgba(0,229,255,0.08); }
+    .step-num {
+      width:56px;height:56px;border-radius:50%;
+      border:2px solid var(--accent);
+      display:flex;align-items:center;justify-content:center;
+      margin:0 auto 1.2rem;
+      font-family:var(--font-d);font-size:1.1rem;font-weight:900;color:var(--accent);
+      position:relative;
+      box-shadow:0 0 20px rgba(0,229,255,0.15);
+    }
+    .step-num::after {
+      content:'';position:absolute;inset:-4px;border-radius:50%;
+      border:1px dashed rgba(0,229,255,0.2);
+      animation:spinOrbit 6s linear infinite;
+    }
+    .step-title { font-family:var(--font-d);font-size:.78rem;font-weight:700;letter-spacing:.06em;margin-bottom:.5rem; }
+    .step-desc { font-size:.88rem;color:var(--muted);line-height:1.6; }
+
+    /* ══════════════════════════════════════════════
+       TECH SPECS
+    ══════════════════════════════════════════════ */
+    .techspec { padding:80px 7%; }
+    .spec-grid { display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:start;margin-top:3rem; }
+    .spec-table { border:1px solid var(--border);overflow:hidden; }
+    .spec-row {
+      display:grid;grid-template-columns:1fr 1fr;
+      border-bottom:1px solid rgba(0,229,255,0.08);
+    }
+    .spec-row:last-child { border-bottom:none; }
+    .spec-key,.spec-val { padding:12px 16px;font-size:.88rem; }
+    .spec-key { font-family:var(--font-m);font-size:.65rem;color:var(--muted);letter-spacing:.1em;border-right:1px solid rgba(0,229,255,0.08); }
+    .spec-val { color:var(--text);font-weight:500; }
+    .spec-val.good { color:var(--accent2); }
+    .spec-highlight {
+      background:rgba(0,229,255,0.04);
+      border:1px solid var(--border);
+      padding:2rem;
+    }
+    .spec-highlight h3 { font-family:var(--font-d);font-size:.9rem;color:var(--accent);margin-bottom:1.2rem;letter-spacing:.08em; }
+    .tag-cloud { display:flex;flex-wrap:wrap;gap:.5rem; }
+    .tg {
+      font-family:var(--font-m);font-size:.6rem;letter-spacing:.1em;
+      color:var(--accent);border:1px solid rgba(0,229,255,0.25);
+      padding:4px 12px;
+      transition:background .25s;
+    }
+    .tg:hover { background:rgba(0,229,255,0.1); }
+
+    /* ══════════════════════════════════════════════
+       VIDEO / MEDIA EMBED
+    ══════════════════════════════════════════════ */
+    .media { padding:80px 7%;background:rgba(0,229,255,0.02); }
+    .video-wrap {
+      max-width:800px;margin:3rem auto 0;
+      position:relative;padding-top:56.25%;
+      border:1px solid var(--border);
+      background:#0a1220;
+      overflow:hidden;
+    }
+    .video-placeholder {
+      position:absolute;inset:0;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      gap:1rem;
+    }
+    .play-btn {
+      width:72px;height:72px;border-radius:50%;
+      border:2px solid var(--accent);
+      display:flex;align-items:center;justify-content:center;
+      font-size:1.8rem;cursor:none;
+      box-shadow:0 0 30px rgba(0,229,255,0.2);
+      transition:background .3s,box-shadow .3s;
+      animation:pulse 2s ease-in-out infinite;
+    }
+    .play-btn:hover { background:rgba(0,229,255,0.1);box-shadow:0 0 50px rgba(0,229,255,0.4); }
+    .video-placeholder p { font-family:var(--font-m);font-size:.65rem;color:var(--muted);letter-spacing:.15em; }
+    /* [EDIT] Untuk embed video YouTube: ganti .video-placeholder dengan:
+       <iframe src="https://www.youtube.com/embed/VIDEO_ID" style="position:absolute;inset:0;width:100%;height:100%;border:0" allowfullscreen></iframe> */
+
+    /* ══════════════════════════════════════════════
+       TESTIMONIALS / RATINGS
+    ══════════════════════════════════════════════ */
+    .reviews { padding:80px 7%; }
+    .rating-hero {
+      display:flex;align-items:center;gap:3rem;margin-bottom:3rem;flex-wrap:wrap;
+    }
+    .rating-big { font-family:var(--font-d);font-size:5rem;font-weight:900;color:var(--accent);line-height:1; }
+    .rating-stars { display:flex;gap:4px;margin:.3rem 0; }
+    .star { color:#f59e0b;font-size:1.3rem; }
+    .rating-count { font-size:.85rem;color:var(--muted); }
+    .rating-bars { flex:1;min-width:200px; }
+    .rbar { display:flex;align-items:center;gap:10px;margin-bottom:.5rem; }
+    .rbar-label { font-family:var(--font-m);font-size:.6rem;color:var(--muted);width:12px;text-align:right; }
+    .rbar-track { flex:1;height:5px;background:rgba(0,229,255,0.1);border-radius:3px;overflow:hidden; }
+    .rbar-fill { height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px; }
+
+    .reviews-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.2rem; }
+    .review-card {
+      padding:1.5rem;
+      border:1px solid rgba(0,229,255,0.1);
+      background:var(--panel);
+      transition:border-color .3s,transform .3s;
+    }
+    .review-card:hover { border-color:rgba(0,229,255,0.25);transform:translateY(-4px); }
+    .review-stars { display:flex;gap:3px;margin-bottom:.8rem; }
+    .rv-star { color:#f59e0b;font-size:.9rem; }
+    .review-text { font-size:.9rem;color:var(--muted);line-height:1.65;margin-bottom:1rem;font-style:italic; }
+    .review-author { font-family:var(--font-d);font-size:.65rem;font-weight:600;color:var(--accent);letter-spacing:.08em; }
+    .review-date { font-size:.75rem;color:var(--muted);margin-top:2px; }
+
+    /* ══════════════════════════════════════════════
+       CTA DOWNLOAD
+    ══════════════════════════════════════════════ */
+    .cta-section {
+      padding:100px 7%;text-align:center;
+      position:relative;overflow:hidden;
+    }
+    .cta-glow {
+      position:absolute;inset:0;pointer-events:none;
+      background:radial-gradient(ellipse 70% 60% at 50% 50%,rgba(0,229,255,0.07),transparent 70%);
+    }
+    .cta-scan {
+      position:absolute;top:0;left:0;right:0;height:2px;
+      background:linear-gradient(90deg,transparent,var(--accent),transparent);
+      animation:scanLine 4s ease-in-out infinite;
+    }
+    .cta-title {
+      font-family:var(--font-d);
+      font-size:clamp(1.8rem,4vw,3.2rem);
+      font-weight:900;line-height:1.1;
+      margin-bottom:1rem;position:relative;z-index:1;
+    }
+    .cta-sub { font-size:1.05rem;color:var(--muted);max-width:500px;margin:0 auto 2.5rem;position:relative;z-index:1; }
+    .cta-btns { display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;position:relative;z-index:1; }
+    .gplay-btn {
+      display:inline-flex;align-items:center;gap:12px;
+      background:linear-gradient(135deg,rgba(0,229,255,0.15),rgba(0,255,136,0.1));
+      border:1px solid rgba(0,229,255,0.3);
+      padding:14px 28px;text-decoration:none;
+      transition:background .3s,box-shadow .3s,transform .2s;
+      clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);
+    }
+    .gplay-btn:hover { background:rgba(0,229,255,0.12);box-shadow:0 0 32px rgba(0,229,255,0.2);transform:translateY(-3px); }
+    .gplay-ico { font-size:1.8rem; }
+    .gplay-text { text-align:left; }
+    .gplay-text small { font-family:var(--font-m);font-size:.58rem;letter-spacing:.12em;color:var(--muted);display:block; }
+    .gplay-text strong { font-family:var(--font-d);font-size:.9rem;color:var(--text);letter-spacing:.05em; }
+
+    /* ══════════════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════════════ */
+    footer {
+      background:rgba(0,5,14,0.97);
+      border-top:1px solid var(--border);
+      padding:2rem 7%;
+      display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;
+    }
+    .foot-copy { font-family:var(--font-m);font-size:.62rem;color:var(--muted);letter-spacing:.1em; }
+    .foot-links { display:flex;gap:1.5rem; }
+    .foot-links a { font-family:var(--font-m);font-size:.62rem;color:var(--muted);text-decoration:none;letter-spacing:.1em;transition:color .25s; }
+    .foot-links a:hover { color:var(--accent); }
+
+    /* ── DIVIDER ── */
+    .div { width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.2; }
+
+    /* ── REVEAL ── */
+    .reveal { opacity:0;transform:translateY(36px);transition:opacity .7s ease,transform .7s ease; }
+    .reveal.visible { opacity:1;transform:none; }
+
+    /* ── KEYFRAMES ── */
+    @keyframes fadeUp { from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none} }
+    @keyframes float { 0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)} }
+    @keyframes spinOrbit { from{transform:translate(-50%,-50%) rotate(0deg)}to{transform:translate(-50%,-50%) rotate(360deg)} }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 20px rgba(0,229,255,0.2)}50%{box-shadow:0 0 40px rgba(0,229,255,0.5)} }
+    @keyframes scanLine { 0%,100%{top:0}50%{top:100%} }
+
+    /* ── BACK TOP ── */
+    #btop {
+      position:fixed;bottom:28px;right:28px;z-index:80;
+      width:42px;height:42px;
+      border:1px solid rgba(0,229,255,0.3);background:rgba(2,8,16,0.88);
+      display:flex;align-items:center;justify-content:center;
+      font-size:1rem;cursor:none;
+      clip-path:polygon(6px 0,100% 0,calc(100% - 6px) 100%,0 100%);
+      opacity:0;pointer-events:none;transform:translateY(12px);
+      transition:opacity .3s,transform .3s,box-shadow .3s;
+    }
+    #btop.vis { opacity:1;pointer-events:auto;transform:none; }
+    #btop:hover { box-shadow:0 0 18px rgba(0,229,255,0.4); }
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:900px){
+      .hero { grid-template-columns:1fr;text-align:center;padding:100px 6% 70px; }
+      .hero-tagline,.hero-meta,.hero-actions { margin-left:auto;margin-right:auto; }
+      .hero-actions { justify-content:center; }
+      .hero-meta { justify-content:center; }
+      .spec-grid { grid-template-columns:1fr; }
+      .rating-hero { flex-direction:column;align-items:flex-start;gap:1.5rem; }
+    }
+    @media(max-width:600px){
+      .hero { padding:90px 5% 60px; }
+      .screenshots,.features,.howto,.techspec,.media,.reviews,.cta-section { padding:60px 5%; }
+      .phone-frame { width:220px; }
+      footer { flex-direction:column;align-items:flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="cur-dot" id="cd"></div>
+<div class="cur-ring" id="cr"></div>
+<canvas id="cv"></canvas>
+<div class="grid"></div>
+<button id="btop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<div class="wrap">
+
+  <!-- ── NAV ── -->
+  <nav>
+    <a href="index.html" class="nav-logo">
+      <div class="nav-logo-ico">
+        <svg width="20" height="20" viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r="30" fill="#cc0022"/>
+          <path d="M32 8 A24 24 0 0 1 56 32 L32 32 Z" fill="white" opacity=".95"/>
+          <path d="M32 56 A24 24 0 0 1 8 32 L32 32 Z" fill="white" opacity=".95"/>
+          <path d="M32 8 L40 28 L24 28 Z" fill="#4caf50"/>
+          <line x1="32" y1="8" x2="32" y2="56" stroke="#cc0022" stroke-width="2"/>
+          <line x1="8" y1="32" x2="56" y2="32" stroke="#cc0022" stroke-width="2"/>
+        </svg>
+      </div>
+      <div class="nav-brand">EL-SALAM<br><span>TECHNOLOGY</span></div>
+    </a>
+    <div class="nav-right">
+      <a href="index.html" class="nav-back">← Back to Home</a>
+      <!-- [EDIT] Ganti href dengan link Google Play app kamu -->
+      <a href="https://elsalamtechnology.github.io/ekinreminderprivacy.html" target="_blank" rel="noopener" class="nav-play">Kebijakan Privasi ↗</a>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       HERO
+  ══════════════════════════════════════════════ -->
+  <section class="hero">
+    <div class="hero-glow"></div>
+
+    <div class="hero-content">
+      <!-- [EDIT] Badge-badge di bawah ini -->
+      <div class="app-badge-row">
+        <span class="badge badge-new">🆕 New Release</span>
+        <span class="badge badge-cat">📱 Productivity</span>
+        <span class="badge badge-free">✦ Free</span>
+        <span class="badge badge-ver">v1.0.0</span>
+      </div>
+
+      <!-- [EDIT] Nama aplikasi -->
+      <h1 class="hero-appname">
+        <span class="name-main">eKin Reminder</span>
+        <span class="name-sub">BY EL-SALAM TECHNOLOGY</span>
+      </h1>
+
+      <!-- [EDIT] Tagline singkat -->
+      <p class="hero-tagline">
+        eKin Reminder adalah aplikasi asisten disiplin yang dirancang khusus untuk Aparatur Sipil Negara (ASN) di Indonesia. Aplikasi ini <strong>membantu Anda memastikan laporan kinerja harian (eKinerja) selalu terisi tepat waktu tanpa ada yang terlewat</strong>. Dengan tampilan antarmuka yang <strong>keren</strong> dan bisa share pencapaian kamu jadi status WhatsApp yang <strong>unik</strong>, eKin Reminder bukan sekadar pengingat biasa, melainkan mitra produktivitas untuk menjaga profesionalisme Anda.
+      </p>
+
+      <!-- [EDIT] Statistik app -->
+      <div class="hero-meta">
+        <div class="meta-item">
+          <span class="meta-val">10K+</span>
+          <span class="meta-key">Downloads</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-val">4.8★</span>
+          <span class="meta-key">Rating</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-val">5 MB</span>
+          <span class="meta-key">Size</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-val">Android 5+</span>
+          <span class="meta-key">Requires</span>
+        </div>
+      </div>
+
+      <div class="hero-actions">
+        <!-- [EDIT] Link Google Play -->
+        <a href="https://play.google.com/store/apps/dev?id=6584416294473991569&hl=en-US" target="_blank" rel="noopener" class="btn-primary">▶ Download Free</a>
+        <a href="#screenshots" class="btn-outline">View Screenshots</a>
+      </div>
+    </div>
+
+    <!-- PHONE FRAME HERO -->
+    <div class="hero-phone">
+      <div class="phone-glow-bg"></div>
+      <div class="phone-orbit phone-orbit-1"><div class="o-dot o-dot-c"></div></div>
+      <div class="phone-orbit phone-orbit-2"><div class="o-dot o-dot-g"></div></div>
+      <div class="phone-frame">
+        <div class="phone-notch"><div class="notch-cam"></div></div>
+        <div class="phone-screen">
+          <!--
+            [EDIT] CARA MENAMBAHKAN SCREENSHOT:
+            Hapus <div class="phone-placeholder">...</div>
+            Ganti dengan: <img class="phone-img" src="screenshot-main.png" alt="App Screenshot" />
+          -->
+          <div class="phone-placeholder">
+            <div class="ph-icon">📱</div>
+            <p>GANTI DENGAN<br/>SCREENSHOT<br/>UTAMA APP</p>
+          </div>
+        </div>
+        <div class="phone-btn"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="div"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SCREENSHOTS
+  ══════════════════════════════════════════════ -->
+  <section class="screenshots" id="screenshots">
+    <div class="reveal">
+      <div class="sec-label">// GALERI SCREENSHOT</div>
+      <h2 class="sec-title">Lihat <em>Tampilannya</em></h2>
+      <p class="sec-desc">Jelajahi setiap layar dan fitur utama yang tersedia dalam aplikasi.</p>
+    </div>
+
+    <div class="screens-track reveal">
+      <!--
+        [EDIT] Tambah/hapus .screen-item sesuai jumlah screenshot.
+        Untuk setiap screen, hapus <div class="screen-placeholder"> dan
+        ganti dengan: <img class="screen-img" src="ss1.png" alt="..." />
+      -->
+
+      <div class="screen-item">
+        <div class="mini-phone">
+          <div class="mini-notch"></div>
+          <div class="mini-screen">
+            <div class="screen-placeholder">
+              <div class="sph-icon">🏠</div>
+              <p>HOME<br/>SCREEN</p>
+            </div>
+          </div>
+          <div class="mini-btn"></div>
+        </div>
+        <div class="screen-label">Home</div>
+      </div>
+
+      <div class="screen-item">
+        <div class="mini-phone">
+          <div class="mini-notch"></div>
+          <div class="mini-screen">
+            <div class="screen-placeholder">
+              <div class="sph-icon">⚙️</div>
+              <p>SETTINGS<br/>SCREEN</p>
+            </div>
+          </div>
+          <div class="mini-btn"></div>
+        </div>
+        <div class="screen-label">Settings</div>
+      </div>
+
+      <div class="screen-item">
+        <div class="mini-phone">
+          <div class="mini-notch"></div>
+          <div class="mini-screen">
+            <div class="screen-placeholder">
+              <div class="sph-icon">📊</div>
+              <p>DASHBOARD<br/>SCREEN</p>
+            </div>
+          </div>
+          <div class="mini-btn"></div>
+        </div>
+        <div class="screen-label">Dashboard</div>
+      </div>
+
+      <div class="screen-item">
+        <div class="mini-phone">
+          <div class="mini-notch"></div>
+          <div class="mini-screen">
+            <div class="screen-placeholder">
+              <div class="sph-icon">👤</div>
+              <p>PROFILE<br/>SCREEN</p>
+            </div>
+          </div>
+          <div class="mini-btn"></div>
+        </div>
+        <div class="screen-label">Profile</div>
+      </div>
+
+      <div class="screen-item">
+        <div class="mini-phone">
+          <div class="mini-notch"></div>
+          <div class="mini-screen">
+            <div class="screen-placeholder">
+              <div class="sph-icon">🔍</div>
+              <p>SEARCH<br/>SCREEN</p>
+            </div>
+          </div>
+          <div class="mini-btn"></div>
+        </div>
+        <div class="screen-label">Search</div>
+      </div>
+
+      <div class="screen-item">
+        <div class="mini-phone">
+          <div class="mini-notch"></div>
+          <div class="mini-screen">
+            <div class="screen-placeholder">
+              <div class="sph-icon">➕</div>
+              <p>TAMBAH<br/>SCREENSHOT</p>
+            </div>
+          </div>
+          <div class="mini-btn"></div>
+        </div>
+        <div class="screen-label">Screen 6</div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="div"></div>
+
+  <!-- ══════════════════════════════════════════════
+       FEATURES
+  ══════════════════════════════════════════════ -->
+  <section class="features" id="features">
+    <div class="reveal">
+      <div class="sec-label">// FITUR UNGGULAN</div>
+      <h2 class="sec-title">Apa yang <em>Membuat Beda</em></h2>
+      <p class="sec-desc">Fitur-fitur menarik yang dirancang untuk memberikan pengalaman terbaik.</p>
+    </div>
+    <div class="feat-grid">
+      <!-- [EDIT] Ubah icon, judul, dan deskripsi setiap fitur -->
+      <div class="feat-card reveal">
+        <span class="feat-ico">⏰</span>
+        <div class="feat-title">Pengingat Cerdas</div>
+        <p class="feat-desc">Notifikasi otomatis pada pagi dan sore hari yang bisa diatur sesuai jadwal kerja Anda.</p>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-ico">📅</span>
+        <div class="feat-title">Khusus Hari Kerja</div>
+        <p class="feat-desc">Pengingat otomatis hanya aktif pada hari Senin hingga Jumat (Sabtu & Minggu libur).</p>
+      </div>
+	  <div class="feat-card reveal">
+        <span class="feat-ico">🔥</span>
+        <div class="feat-title">Sistem Streak</div>
+        <p class="feat-desc">Pantau konsistensi pengisian Anda dengan fitur daily streak untuk memotivasi kedisiplinan.</p>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-ico">📤</span>
+        <div class="feat-title">Share Pencapaian</div>
+        <p class="feat-desc">Bagikan bukti pengisian eKinerja yang estetik ke grup WhatsApp atau media sosial lainnya.</p>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-ico">🔒</span>
+        <div class="feat-title">Privasi Terjamin</div>
+        <p class="feat-desc">Semua data pribadi (Nama, NIP, Jabatan) disimpan secara lokal di perangkat Anda, tanpa dikirim ke server luar.</p>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-ico">🔄</span>
+        <div class="feat-title">Update Rutin</div>
+        <p class="feat-desc">Kami terus memperbarui aplikasi dengan fitur baru, perbaikan bug, dan peningkatan performa.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="div"></div>
+
+  <!-- ══════════════════════════════════════════════
+       HOW IT WORKS
+  ══════════════════════════════════════════════ -->
+  <section class="howto">
+    <div class="reveal">
+      <div class="sec-label">// CARA PENGGUNAAN</div>
+      <h2 class="sec-title">Mulai dalam <em>3 Langkah</em></h2>
+      <p class="sec-desc">Sangat mudah digunakan. Mulai dalam hitungan detik!</p>
+    </div>
+    <div class="steps">
+      <!-- [EDIT] Sesuaikan langkah-langkah penggunaan app -->
+      <div class="step reveal">
+        <div class="step-num">01</div>
+        <div class="step-title">Download & Install</div>
+        <p class="step-desc">Unduh aplikasi gratis dari Google Play Store dan install di perangkat Android kamu.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">02</div>
+        <div class="step-title">Mulai Gunakan</div>
+        <p class="step-desc">Nikmati semua fitur dan mulai produktif. Semudah itu!</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">03</div>
+        <div class="step-title">Beri Ulasan</div>
+        <p class="step-desc">Bantu kami berkembang dengan memberikan ulasan bintang 5 di Google Play. Terima kasih!</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="div"></div>
+
+  <!-- ══════════════════════════════════════════════
+       TECH SPECS
+  ══════════════════════════════════════════════ -->
+  <section class="techspec" id="specs">
+    <div class="reveal">
+      <div class="sec-label">// SPESIFIKASI TEKNIS</div>
+      <h2 class="sec-title">Informasi <em>Teknis</em></h2>
+      <p class="sec-desc">Detail teknis untuk developer dan pengguna yang ingin tahu lebih lanjut.</p>
+    </div>
+    <div class="spec-grid">
+      <!-- [EDIT] Sesuaikan spesifikasi aplikasi -->
+      <div class="spec-table reveal">
+        <div class="spec-row">
+          <div class="spec-key">Versi Saat Ini</div>
+          <div class="spec-val good">v1.0.0</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-key">Android Minimum</div>
+          <div class="spec-val">Android 8.0 (API 26)</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-key">Target SDK</div>
+          <div class="spec-val">Android 14 (API 34)</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-key">Ukuran File</div>
+          <div class="spec-val">~5 MB</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-key">Bahasa Dev</div>
+          <div class="spec-val">Kotlin (Modern Android Development)</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-key">Kategori</div>
+          <div class="spec-val">Productivity / Alat Kerja</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-key">Harga</div>
+          <div class="spec-val good">Gratis</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-key">In-App Purchases</div>
+          <div class="spec-val">Tidak Ada</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-key">Iklan</div>
+          <div class="spec-val">Ada (Google AdMob)</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-key">Tanggal Rilis</div>
+          <div class="spec-val">April 2026</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-key">Developer</div>
+          <div class="spec-val">El-Salam Technology, Inc.</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-key">Izin (Permissions)</div>
+          <div class="spec-val">Internet, Notifications (Android 13+), Exact Alarms (Android 12+), Receive Boot Completed, Vibrate.</div>
+        </div>
+      </div>
+      <div class="spec-highlight reveal">
+        <h3>// TEKNOLOGI YANG DIGUNAKAN</h3>
+        <!-- [EDIT] Tambah/hapus teknologi sesuai app -->
+        <div class="tag-cloud">
+          <span class="tg">Kotlin</span>
+          <span class="tg">Android Studio</span>
+          <span class="tg">Material Design 3</span>
+          <span class="tg">View Binding</span>
+          <span class="tg">SharedPreferences</span>
+          <span class="tg">Coroutines</span>
+          <span class="tg">ViewModel</span>
+          <span class="tg">LiveData</span>
+          <span class="tg">Google Play Services</span>
+          <span class="tg">AdMob</span>
+		  <span class="tg">Lottie</span>
+          <span class="tg">Glide</span>
+          <span class="tg">WorkManager</span>
+          <span class="tg">Navigation Component</span>
+          <span class="tg">Core Splashscreen API</span>
+        </div>
+
+        <h3 style="margin-top:2rem">// CHANGELOG v1.0.0 • Initial release</h3>
+        <!-- [EDIT] Update changelog setiap rilis -->
+        <div style="font-size:.85rem;color:var(--muted);line-height:1.8">
+          <p style="color:var(--accent2);font-family:var(--font-m);font-size:.62rem;margin-bottom:.5rem">• Initial release</p>
+          <p>✓ Fitur Utama: Pengingat eKinerja otomatis (Pagi & Sore).</p>
+          <p>✓ Smart Scheduling: Notifikasi cerdas yang hanya aktif pada hari kerja (Senin-Jumat).</p>
+          <p>✓ Daily Streak: Sistem motivasi kedisiplinan dengan pelacakan hari beruntun.</p>
+          <p>✓ Share Achievement: Fitur berbagi bukti pengisian eKinerja ke WhatsApp dengan desain kartu futuristik.</p>
+          <p>✓ Privacy First: Data pribadi disimpan 100% secara lokal di perangkat pengguna.</p>
+		  <p>✓ UI/UX Modern: Desain antarmuka futuristik dengan tema gelap yang nyaman di mata.</p>
+		  <p>✓ Android Support: Mendukung perangkat dengan Android 8.0 (Oreo) hingga versi terbaru.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="div"></div>
+
+  <!-- ══════════════════════════════════════════════
+       VIDEO / DEMO
+  ══════════════════════════════════════════════ -->
+  <section class="media">
+    <div class="reveal" style="text-align:center;max-width:600px;margin:0 auto 0">
+      <div class="sec-label">// DEMO VIDEO</div>
+      <h2 class="sec-title">Lihat App <em>Beraksi</em></h2>
+      <p class="sec-desc">Tonton video demo singkat untuk melihat cara kerja aplikasi secara langsung.</p>
+    </div>
+    <div class="video-wrap reveal">
+      <!--
+        [EDIT] CARA EMBED VIDEO YOUTUBE:
+        1. Hapus seluruh <div class="video-placeholder">
+        2. Ganti dengan:
+           <iframe
+             src="https://www.youtube.com/embed/VIDEO_ID_KAMU"
+             style="position:absolute;inset:0;width:100%;height:100%;border:0"
+             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+             allowfullscreen>
+           </iframe>
+      -->
+      <div class="video-placeholder">
+        <div class="play-btn">▶</div>
+        <p>EMBED VIDEO YOUTUBE DI SINI</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="div"></div>
+
+  <!-- ══════════════════════════════════════════════
+       REVIEWS
+  ══════════════════════════════════════════════ -->
+  <section class="reviews">
+    <div class="reveal">
+      <div class="sec-label">// ULASAN PENGGUNA</div>
+      <h2 class="sec-title">Yang Mereka <em>Katakan</em></h2>
+    </div>
+    <!-- [EDIT] Sesuaikan rating dan ulasan -->
+    <div class="rating-hero reveal">
+      <div>
+        <div class="rating-big">4.8</div>
+        <div class="rating-stars">
+          <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+        </div>
+        <div class="rating-count">Berdasarkan 500+ ulasan di Google Play</div>
+      </div>
+      <div class="rating-bars">
+        <div class="rbar"><span class="rbar-label">5</span><div class="rbar-track"><div class="rbar-fill" style="width:75%"></div></div><span style="font-size:.72rem;color:var(--muted)">75%</span></div>
+        <div class="rbar"><span class="rbar-label">4</span><div class="rbar-track"><div class="rbar-fill" style="width:15%"></div></div><span style="font-size:.72rem;color:var(--muted)">15%</span></div>
+        <div class="rbar"><span class="rbar-label">3</span><div class="rbar-track"><div class="rbar-fill" style="width:6%"></div></div><span style="font-size:.72rem;color:var(--muted)">6%</span></div>
+        <div class="rbar"><span class="rbar-label">2</span><div class="rbar-track"><div class="rbar-fill" style="width:2%"></div></div><span style="font-size:.72rem;color:var(--muted)">2%</span></div>
+        <div class="rbar"><span class="rbar-label">1</span><div class="rbar-track"><div class="rbar-fill" style="width:2%"></div></div><span style="font-size:.72rem;color:var(--muted)">2%</span></div>
+      </div>
+    </div>
+    <div class="reviews-grid">
+      <!-- [EDIT] Isi ulasan nyata dari pengguna Google Play -->
+      <div class="review-card reveal">
+        <div class="review-stars"><span class="rv-star">★</span><span class="rv-star">★</span><span class="rv-star">★</span><span class="rv-star">★</span><span class="rv-star">★</span></div>
+        <p class="review-text">"Aplikasi yang sangat membantu! Tampilannya bersih dan mudah digunakan. Recommended banget!"</p>
+        <div class="review-author">Ahmad R.</div>
+        <div class="review-date">Google Play · April 2026</div>
+      </div>
+      <div class="review-card reveal">
+        <div class="review-stars"><span class="rv-star">★</span><span class="rv-star">★</span><span class="rv-star">★</span><span class="rv-star">★</span><span class="rv-star">★</span></div>
+        <p class="review-text">"Mantap! Ringan, cepat, dan fiturnya lengkap. Semoga terus diupdate dengan fitur baru."</p>
+        <div class="review-author">Siti N.</div>
+        <div class="review-date">Google Play · April 2026</div>
+      </div>
+      <div class="review-card reveal">
+        <div class="review-stars"><span class="rv-star">★</span><span class="rv-star">★</span><span class="rv-star">★</span><span class="rv-star">★</span><span class="rv-star">★</span></div>
+        <p class="review-text">"Sangat berguna untuk kebutuhan sehari-hari. Developer responsif dan cepat update kalau ada bug."</p>
+        <div class="review-author">Budi S.</div>
+        <div class="review-date">Google Play · Maret 2026</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="div"></div>
+
+  <!-- ══════════════════════════════════════════════
+       CTA DOWNLOAD
+  ══════════════════════════════════════════════ -->
+  <section class="cta-section">
+    <div class="cta-glow"></div>
+    <div class="cta-scan"></div>
+    <h2 class="cta-title reveal">
+      Siap untuk <span style="color:var(--accent)">Download?</span>
+    </h2>
+    <!-- [EDIT] Tagline CTA -->
+    <p class="cta-sub reveal">Gratis, ringan, dan terus berkembang. Jadilah bagian dari komunitas pengguna kami!</p>
+    <div class="cta-btns reveal">
+      <!-- [EDIT] Ganti href dengan link langsung ke app di Play Store -->
+      <a href="https://play.google.com/store/apps/dev?id=6584416294473991569&hl=en-US" target="_blank" rel="noopener" class="gplay-btn">
+        <div class="gplay-ico">▶</div>
+        <div class="gplay-text">
+          <small>GET IT ON</small>
+          <strong>Google Play</strong>
+        </div>
+      </a>
+      <a href="index.html#contact" class="btn-outline">💬 Kirim Feedback</a>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <footer>
+    <div class="foot-copy">© 2016–2026 EL-SALAM TECHNOLOGY, INC.</div>
+    <div class="foot-links">
+      <a href="index.html">Home</a>
+      <a href="index.html#privacy">Privacy Policy</a>
+      <a href="index.html#contact">Contact</a>
+      <a href="https://play.google.com/store/apps/dev?id=6584416294473991569&hl=en-US" target="_blank" rel="noopener">Google Play ↗</a>
+    </div>
+  </footer>
+
+</div><!-- /wrap -->
+
+<script>
+/* ── CURSOR ── */
+const cd = document.getElementById('cd'), cr = document.getElementById('cr');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+(function loop(){
+  cd.style.cssText=`left:${mx}px;top:${my}px`;
+  rx+=(mx-rx)*.15;ry+=(my-ry)*.15;
+  cr.style.cssText=`left:${rx}px;top:${ry}px`;
+  requestAnimationFrame(loop);
+})();
+
+/* ── STARS ── */
+(function(){
+  const c=document.getElementById('cv'),ctx=c.getContext('2d');
+  let W,H,stars=[];
+  function resize(){W=c.width=innerWidth;H=c.height=innerHeight;init();}
+  function init(){stars=Array.from({length:160},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+.2,o:Math.random()*.6+.1,sp:Math.random()*.25+.04,dr:(Math.random()-.5)*.1}));}
+  function draw(){ctx.clearRect(0,0,W,H);stars.forEach(s=>{ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(180,220,255,${s.o})`;ctx.fill();s.y-=s.sp;s.x+=s.dr;if(s.y<-2){s.y=H+2;s.x=Math.random()*W;}});requestAnimationFrame(draw);}
+  window.addEventListener('resize',resize);resize();draw();
+})();
+
+/* ── SCROLL ── */
+window.addEventListener('scroll',()=>{
+  document.getElementById('btop').classList.toggle('vis',scrollY>300);
+});
+
+/* ── REVEAL ── */
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach((e,i)=>{if(e.isIntersecting){setTimeout(()=>e.target.classList.add('visible'),i*70);obs.unobserve(e.target);}});
+},{threshold:.1});
+document.querySelectorAll('.reveal').forEach(r=>obs.observe(r));
+
+/* ── SMOOTH ANCHOR ── */
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{const t=document.querySelector(a.getAttribute('href'));if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'});}});
+});
+</script>
+</body>
+</html>

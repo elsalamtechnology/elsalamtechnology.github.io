@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kebijakan Privasi — DOCUSCAN AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── RESET & BASE ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #040812;
+      --surface:   #080f20;
+      --border:    rgba(0,200,255,0.18);
+      --glow:      #00c8ff;
+      --glow2:     #7b2fff;
+      --glow3:     #00ffc8;
+      --text:      #c9e8ff;
+      --text-dim:  #5a7fa3;
+      --accent:    #00c8ff;
+      --accent2:   #7b2fff;
+      --danger:    #ff4d6d;
+      --font-head: 'Orbitron', monospace;
+      --font-body: 'Space Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      line-height: 1.8;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── ANIMATED BACKGROUND ──────────────────────────────── */
+    .bg-layer {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      overflow: hidden;
+    }
+
+    /* Grid lines */
+    .bg-layer::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,200,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,200,255,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: gridScroll 20s linear infinite;
+    }
+
+    @keyframes gridScroll {
+      0%   { background-position: 0 0; }
+      100% { background-position: 60px 60px; }
+    }
+
+    /* Glowing orbs */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.25;
+      animation: orbFloat 12s ease-in-out infinite alternate;
+    }
+    .orb1 { width: 500px; height: 500px; background: var(--glow2); top: -150px; left: -150px; animation-duration: 14s; }
+    .orb2 { width: 400px; height: 400px; background: var(--glow);  bottom: -100px; right: -100px; animation-duration: 11s; animation-delay: -4s; }
+    .orb3 { width: 300px; height: 300px; background: var(--glow3); top: 40%; left: 60%; animation-duration: 16s; animation-delay: -7s; }
+
+    @keyframes orbFloat {
+      0%   { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(40px, 30px) scale(1.1); }
+    }
+
+    /* Scanline */
+    .scanline {
+      position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.03) 2px,
+        rgba(0,0,0,0.03) 4px
+      );
+    }
+
+    /* ─── LAYOUT ────────────────────────────────────────────── */
+    .wrapper {
+      position: relative; z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 60px 24px 120px;
+    }
+
+    /* ─── HEADER ────────────────────────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 70px;
+      animation: fadeDown 0.9s ease both;
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .app-badge {
+      display: inline-block;
+      border: 1px solid var(--border);
+      background: rgba(0,200,255,0.06);
+      color: var(--glow);
+      font-family: var(--font-head);
+      font-size: 10px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      padding: 6px 20px;
+      border-radius: 100px;
+      margin-bottom: 28px;
+      animation: pulse-border 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse-border {
+      0%,100% { box-shadow: 0 0 0px rgba(0,200,255,0.3); }
+      50%      { box-shadow: 0 0 18px rgba(0,200,255,0.6); }
+    }
+
+    h1.title {
+      font-family: var(--font-head);
+      font-size: clamp(28px, 6vw, 52px);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, var(--glow) 0%, var(--glow2) 60%, var(--glow3) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 18px;
+      filter: drop-shadow(0 0 30px rgba(0,200,255,0.4));
+    }
+
+    .subtitle {
+      color: var(--text-dim);
+      font-size: 12px;
+      letter-spacing: 2px;
+    }
+
+    .last-updated {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 11px;
+      color: var(--glow3);
+      letter-spacing: 1px;
+    }
+
+    /* ─── DIVIDER ───────────────────────────────────────────── */
+    .divider {
+      display: flex; align-items: center; gap: 16px;
+      margin: 48px 0 36px;
+    }
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+    }
+    .divider-icon {
+      width: 8px; height: 8px;
+      border: 1px solid var(--glow);
+      transform: rotate(45deg);
+      box-shadow: 0 0 12px var(--glow);
+      animation: spin-square 6s linear infinite;
+    }
+    @keyframes spin-square {
+      to { transform: rotate(405deg); }
+    }
+
+    /* ─── SECTION ───────────────────────────────────────────── */
+    .section {
+      background: rgba(8,15,32,0.7);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px 36px 32px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Glowing corner accent */
+    .section::before {
+      content: '';
+      position: absolute; top: 0; left: 0;
+      width: 60px; height: 60px;
+      border-top: 2px solid var(--glow);
+      border-left: 2px solid var(--glow);
+      border-radius: 16px 0 0 0;
+      opacity: 0.5;
+    }
+    .section::after {
+      content: '';
+      position: absolute; bottom: 0; right: 0;
+      width: 40px; height: 40px;
+      border-bottom: 2px solid var(--glow2);
+      border-right: 2px solid var(--glow2);
+      border-radius: 0 0 16px 0;
+      opacity: 0.5;
+    }
+
+    .section:hover {
+      border-color: rgba(0,200,255,0.4);
+      box-shadow: 0 0 30px rgba(0,200,255,0.08), inset 0 0 30px rgba(0,200,255,0.03);
+      transition: border-color 0.3s, box-shadow 0.3s, opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    /* Section number tag */
+    .section-number {
+      font-family: var(--font-head);
+      font-size: 10px;
+      color: var(--glow2);
+      letter-spacing: 3px;
+      margin-bottom: 10px;
+    }
+
+    h2.section-title {
+      font-family: var(--font-head);
+      font-size: clamp(14px, 3vw, 18px);
+      font-weight: 700;
+      color: var(--glow);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h2.section-title .icon {
+      font-size: 18px;
+      filter: drop-shadow(0 0 6px var(--glow));
+    }
+
+    p { color: var(--text); margin-bottom: 14px; }
+    p:last-child { margin-bottom: 0; }
+
+    /* ─── LIST ITEMS ────────────────────────────────────────── */
+    ul.data-list {
+      list-style: none;
+      padding: 0;
+      margin: 16px 0;
+    }
+
+    ul.data-list li {
+      padding: 10px 16px;
+      margin-bottom: 8px;
+      border-left: 2px solid var(--glow);
+      background: rgba(0,200,255,0.04);
+      border-radius: 0 8px 8px 0;
+      font-size: 13px;
+      color: var(--text);
+      transition: background 0.2s;
+      position: relative;
+    }
+
+    ul.data-list li::before {
+      content: '›';
+      color: var(--glow);
+      font-size: 18px;
+      margin-right: 10px;
+      line-height: 1;
+    }
+
+    ul.data-list li:hover {
+      background: rgba(0,200,255,0.09);
+    }
+
+    ul.data-list.purple li {
+      border-left-color: var(--glow2);
+    }
+    ul.data-list.purple li::before {
+      color: var(--glow2);
+    }
+
+    ul.data-list.green li {
+      border-left-color: var(--glow3);
+    }
+    ul.data-list.green li::before {
+      color: var(--glow3);
+    }
+
+    /* ─── HIGHLIGHT BOX ─────────────────────────────────────── */
+    .highlight-box {
+      background: linear-gradient(135deg, rgba(0,200,255,0.07), rgba(123,47,255,0.07));
+      border: 1px solid rgba(0,200,255,0.25);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin: 20px 0;
+      font-size: 13px;
+    }
+
+    .highlight-box.warning {
+      background: linear-gradient(135deg, rgba(255,77,109,0.07), rgba(123,47,255,0.07));
+      border-color: rgba(255,77,109,0.25);
+    }
+
+    .highlight-box .label {
+      font-family: var(--font-head);
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--glow);
+      margin-bottom: 8px;
+    }
+
+    .highlight-box.warning .label {
+      color: var(--danger);
+    }
+
+    /* ─── CONTACT CARD ──────────────────────────────────────── */
+    .contact-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: rgba(0,200,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 22px;
+      margin-top: 16px;
+      transition: background 0.2s;
+    }
+
+    .contact-card:hover {
+      background: rgba(0,200,255,0.1);
+    }
+
+    .contact-icon {
+      font-size: 24px;
+      filter: drop-shadow(0 0 8px var(--glow));
+    }
+
+    .contact-card a {
+      color: var(--glow);
+      text-decoration: none;
+      font-family: var(--font-head);
+      font-size: 13px;
+      letter-spacing: 1px;
+    }
+
+    .contact-card a:hover {
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    /* ─── FLOATING TOC ──────────────────────────────────────── */
+    .toc-float {
+      position: fixed;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toc-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .toc-dot:hover, .toc-dot.active {
+      background: var(--glow);
+      box-shadow: 0 0 12px var(--glow);
+      transform: scale(1.4);
+    }
+
+    .toc-dot:hover::after {
+      content: attr(data-label);
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 12px;
+      font-size: 10px;
+      white-space: nowrap;
+      color: var(--glow);
+      font-family: var(--font-head);
+      letter-spacing: 1px;
+    }
+
+    /* ─── PROGRESS BAR ──────────────────────────────────────── */
+    .progress-bar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--glow2), var(--glow), var(--glow3));
+      z-index: 9998;
+      transition: width 0.1s linear;
+      box-shadow: 0 0 10px var(--glow);
+    }
+
+    /* ─── FOOTER ────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      margin-top: 80px;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 11px;
+      letter-spacing: 2px;
+      animation: fadeUp 0.8s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    footer .footer-brand {
+      font-family: var(--font-head);
+      font-size: 13px;
+      color: var(--glow);
+      letter-spacing: 3px;
+      margin-bottom: 8px;
+    }
+
+    /* ─── RESPONSIVE ────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .section { padding: 24px 20px; }
+      .toc-float { display: none; }
+      .wrapper { padding: 40px 16px 80px; }
+    }
+
+    /* ─── CURSOR GLOW ───────────────────────────────────────── */
+    .cursor-glow {
+      position: fixed;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,200,255,0.07) 0%, transparent 70%);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      z-index: 0;
+      transition: opacity 0.3s;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Scanline overlay -->
+<div class="scanline"></div>
+
+<!-- Cursor glow -->
+<div class="cursor-glow" id="cursorGlow"></div>
+
+<!-- Progress bar -->
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- Background -->
+<div class="bg-layer">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
+
+<!-- Floating TOC -->
+<nav class="toc-float" id="tocFloat">
+  <div class="toc-dot active" data-target="s1" data-label="Pendahuluan"></div>
+  <div class="toc-dot" data-target="s2" data-label="Data Terkumpul"></div>
+  <div class="toc-dot" data-target="s3" data-label="Penggunaan Data"></div>
+  <div class="toc-dot" data-target="s4" data-label="Berbagi Data"></div>
+  <div class="toc-dot" data-target="s5" data-label="Keamanan"></div>
+  <div class="toc-dot" data-target="s6" data-label="Hak Pengguna"></div>
+  <div class="toc-dot" data-target="s7" data-label="Anak-anak"></div>
+  <div class="toc-dot" data-target="s8" data-label="Pihak Ketiga"></div>
+  <div class="toc-dot" data-target="s9" data-label="Perubahan"></div>
+  <div class="toc-dot" data-target="s10" data-label="Kontak"></div>
+</nav>
+
+<div class="wrapper">
+
+  <!-- ─── HEADER ─── -->
+  <header>
+    <div><a href="https://elsalamtechnology.github.io/" target="_blank" rel="noopener" class="app-badge">Ke Halaman Utama</a></div>
+    <h1 class="title">Kebijakan<br/>Privasi</h1>
+    <p class="subtitle">DOCUSCAN AI · ANDROID</p>
+    <span class="last-updated">⬡ Terakhir diperbarui: 28 April 2026</span>
+  </header>
+
+  <!-- ─── INTRO BOX ─── -->
+  <div class="highlight-box">
+    <div class="label">// RINGKASAN</div>
+    <p style="margin:0; font-size:13px;">
+      Kebijakan Privasi ini menjelaskan bagaimana<strong style="color:var(--glow)"> DocuScan AI</strong> ("kami", "kita", atau "aplikasi") mengumpulkan, menggunakan, dan melindungi informasi pribadi Anda saat menggunakan layanan kami. Dengan menggunakan aplikasi ini, Anda menyetujui praktik yang dijelaskan dalam kebijakan ini.
+    </p>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-icon"></div><div class="divider-line"></div></div>
+
+  <!-- ─── SECTION 1 ─── -->
+  <section class="section" id="s1">
+    <div class="section-number">// 01</div>
+    <h2 class="section-title"><span class="icon">🔭</span> Pendahuluan &amp; Ruang Lingkup</h2>
+    <p>
+      <strong style="color:var(--glow)">DocuScan AI</strong> adalah aplikasi Android yang dikembangkan oleh <strong>El-Salam Technology</strong>, berdomisili di Indonesia. Kebijakan Privasi ini berlaku untuk semua pengguna aplikasi kami di seluruh dunia.
+    </p>
+    <p>
+      Kami berkomitmen untuk melindungi privasi Anda dan memastikan data pribadi Anda ditangani dengan aman, transparan, dan sesuai dengan peraturan yang berlaku, termasuk <strong>Undang-Undang Perlindungan Data Pribadi (UU PDP) Indonesia</strong>, GDPR (untuk pengguna Eropa), dan kebijakan <strong>Google Play</strong>.
+    </p>
+    <div class="highlight-box">
+      <div class="label">// YURISDIKSI</div>
+      <p style="margin:0; font-size:13px;">Kebijakan ini tunduk pada hukum Republik Indonesia. Pengguna dari wilayah lain juga dilindungi oleh hak-hak yang diberikan oleh regulasi lokal yang berlaku di wilayah mereka.</p>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 2 ─── -->
+  <section class="section" id="s2">
+    <div class="section-number">// 02</div>
+    <h2 class="section-title"><span class="icon">📡</span> Data yang Kami Kumpulkan</h2>
+    <p>Kami mengumpulkan beberapa jenis informasi untuk menyediakan dan meningkatkan layanan kami:</p>
+
+    <p style="color: var(--glow); font-size:12px; letter-spacing:2px; margin-bottom:8px;">DATA YANG DIKUMPULKAN OTOMATIS</p>
+    <ul class="data-list">
+      <li>Jenis perangkat, model, dan sistem operasi Android.</li>
+      <li>Versi aplikasi yang digunakan.</li>
+      <li>Alamat IP dan data jaringan (Wi-Fi / seluler).</li>
+	  <li>Log aktivitas, crash report, dan data diagnostik melalui Firebase Crashlytics.</li>
+	  <li>Token Firebase / FCM untuk notifikasi push.</li>
+    </ul>
+
+    <p style="color: var(--glow2); font-size:12px; letter-spacing:2px; margin-bottom:8px; margin-top:20px;">DATA YANG DIKUMPULKAN OTOMATIS (PIHAK KETIGA)</p>
+    <ul class="data-list purple">
+      <li>Informasi perangkat (Model, Versi OS Android).</li>
+      <li>ID Iklan (Google Advertising ID) untuk keperluan penayangan iklan melalui Google AdMob.</li>
+      <li>Log aktivitas teknis dan data diagnostik (Crashlytics) untuk perbaikan aplikasi.</li>
+    </ul>
+
+    <p style="color: var(--glow3); font-size:12px; letter-spacing:2px; margin-bottom:8px; margin-top:20px;">DATA BERBASIS IZIN</p>
+    <ul class="data-list green">
+      <li><strong>Kamera</strong> — Digunakan untuk mengambil gambar dokumen yang akan dianalisis secara cerdas.</li>
+      <li><strong>Penyimpanan</strong> — Digunakan untuk membaca file gambar/PDF dari galeri dan menyimpan hasil ekspor PDF ke perangkat Anda sebelum dibagikan ke WhatsApp.</li>
+	  <li><strong>Internet</strong> — Digunakan untuk memproses analisis dokumen menggunakan teknologi AI (Gemini) dan menampilkan iklan.</li>
+    </ul>
+
+    <div class="highlight-box warning" style="margin-top:20px;">
+      <div class="label">// PERHATIAN</div>
+      <p style="margin:0; font-size:13px;">Kami <strong>tidak pernah</strong> mengumpulkan nama, alamat email, atau nomor telepon secara langsung karena aplikasi ini dapat digunakan tanpa registrasi akun (anonim). Kami juga <strong>tidak pernah</strong> mengumpulkan data biometrik atau data sensitif lainnya tanpa persetujuan eksplisit Anda.</p>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 3 ─── -->
+  <section class="section" id="s3">
+    <div class="section-number">// 03</div>
+    <h2 class="section-title"><span class="icon">⚙️</span> Bagaimana Kami Menggunakan Data Anda</h2>
+    <p>Kami menggunakan informasi yang dikumpulkan untuk tujuan-tujuan berikut:</p>
+    <ul class="data-list">
+      <li>Menyediakan fitur pemindaian dan analisis dokumen berbasis AI.</li>
+      <li>Memproses konversi dokumen ke format PDF secara lokal maupun berbasis cloud.</li>
+      <li>Meningkatkan akurasi analisis AI dan performa aplikasi.</li>
+      <li>Menampilkan iklan yang relevan melalui layanan pihak ketiga (AdMob).</li>
+      <li>Mencegah penyalahgunaan layanan dan mematuhi kewajiban hukum.</li>
+    </ul>
+  </section>
+
+  <!-- ─── SECTION 4 ─── -->
+  <section class="section" id="s4">
+    <div class="section-number">// 04</div>
+    <h2 class="section-title"><span class="icon">🔗</span> Berbagi &amp; Pengungkapan Data</h2>
+    <p>Kami <strong>tidak menjual</strong> data pribadi Anda. Data Anda dibagikan secara terbatas hanya kepada:</p>
+    <ul class="data-list purple">
+      <li><strong>Layanan AI (OpenRouter/Gemini)</strong> — Gambar dokumen dikirimkan ke server API untuk diproses analisisnya secara sementara dan tidak disimpan secara permanen oleh pengembang.</li>
+      <li><strong>Google Firebase</strong> — Untuk analitik penggunaan dan laporan kerusakan aplikasi.</li>
+	  <li><strong>Google AdMob</strong> — Untuk penayangan iklan di dalam aplikasi. Setiap layanan memiliki kebijakan privasi masing-masing yang terikat pada perlindungan data global.</li>
+    </ul>
+  </section>
+
+  <!-- ─── SECTION 5 ─── -->
+  <section class="section" id="s5">
+    <div class="section-number">// 05</div>
+    <h2 class="section-title"><span class="icon">🛡️</span> Keamanan Data</h2>
+    <p>Keamanan data Anda adalah prioritas kami:</p>
+    <ul class="data-list green">
+      <li>Pengiriman gambar untuk analisis dilakukan melalui jalur <strong>terenkripsi HTTPS/TLS.</strong></li>
+	  <li>Kami <strong>meminimalkan </strong>penyimpanan data di server; sebagian besar proses (seperti pembuatan PDF) dilakukan langsung di perangkat Anda.</li>
+    </ul>
+  </section>
+
+  <!-- ─── SECTION 6 ─── -->
+  <section class="section" id="s6">
+    <div class="section-number">// 06</div>
+    <h2 class="section-title"><span class="icon">⚖️</span> Hak-Hak Pengguna</h2>
+    <p>Anda memiliki hak untuk:</p>
+    <ul class="data-list">
+      <li><strong style="color:var(--glow)">Menghentikan pengumpulan data </strong>dengan menghapus aplikasi.</li>
+      <li><strong style="color:var(--glow)">Mengatur izin Kamera dan Penyimpanan </strong>melalui pengaturan sistem Android kapan saja.</li>
+      <li><strong style="color:var(--glow)">Menghubungi kami </strong>jika memiliki kekhawatiran terkait data yang diproses selama analisis dokumen.</li>
+    </ul>
+  </section>
+
+  <!-- ─── SECTION 7 ─── -->
+  <section class="section" id="s7">
+    <div class="section-number">// 07</div>
+    <h2 class="section-title"><span class="icon">👶</span> Perlindungan Anak</h2>
+    <p>
+      Aplikasi kami <strong>tidak ditujukan untuk anak-anak di bawah usia 13 tahun</strong> (atau usia minimum yang berlaku di yurisdiksi Anda). Jika Anda adalah orang tua dan mengetahui anak Anda memberikan informasi kepada kami, silakan hubungi kami untuk penghapusan data.
+    </p>
+  </section>
+
+  <!-- ─── SECTION 8 ─── -->
+  <section class="section" id="s8">
+    <div class="section-number">// 08</div>
+    <h2 class="section-title"><span class="icon">🌐</span> Layanan Pihak Ketiga</h2>
+    <p>Aplikasi kami mungkin mengintegrasikan layanan dari pihak ketiga. Setiap layanan beroperasi di bawah kebijakan privasi mereka sendiri. Kami mendorong Anda untuk membaca kebijakan pihak ketiga yang kami gunakan:</p>
+    <ul class="data-list purple">
+      <li><strong>Google Play Services</strong> — <a href="https://policies.google.com/privacy" target="_blank" style="color:var(--glow2)">policies.google.com/privacy</a></li>
+      <li><strong>Google AdMob</strong> — <a href="https://support.google.com/admob/answer/6128543" target="_blank" style="color:var(--glow2)">support.google.com/admob</a></li>
+	  <li><strong>Google Firebase</strong> — <a href="https://firebase.google.com/support/privacy" target="_blank" style="color:var(--glow2)">firebase.google.com/support/privacy</a></li>
+	  <li><strong>OpenRouter (AI Provider)</strong> — <a href="https://openrouter.ai/privacy" target="_blank" style="color:var(--glow2)">openrouter.ai/privacy</a></li>
+    </ul>
+    <p>Kami tidak bertanggung jawab atas praktik privasi pihak ketiga tersebut. Penggunaan layanan mereka tunduk pada syarat dan ketentuan masing-masing.</p>
+  </section>
+
+  <!-- ─── SECTION 9 ─── -->
+  <section class="section" id="s9">
+    <div class="section-number">// 09</div>
+    <h2 class="section-title"><span class="icon">🔄</span> Perubahan Kebijakan Privasi</h2>
+    <p>
+      Kami dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu untuk mencerminkan perubahan dalam praktik kami, teknologi, persyaratan hukum, atau alasan bisnis lainnya. Kami akan memberitahu Anda tentang perubahan signifikan melalui:
+    </p>
+    <ul class="data-list green">
+      <li>Pembaruan aplikasi di Google Play Store</li>
+      <li>Dialog informasi di dalam aplikasi.</li>
+      <li>Pembaruan tanggal "Terakhir Diperbarui" pada halaman ini</li>
+    </ul>
+    <p>
+      Penggunaan aplikasi yang berkelanjutan setelah perubahan efektif merupakan penerimaan Anda atas kebijakan yang diperbarui. Jika Anda tidak setuju dengan perubahan, silakan hentikan penggunaan aplikasi.
+    </p>
+  </section>
+
+  <!-- ─── SECTION 10 ─── -->
+  <section class="section" id="s10">
+    <div class="section-number">// 10</div>
+    <h2 class="section-title"><span class="icon">📬</span> Hubungi Kami</h2>
+    <p>
+      Jika Anda memiliki pertanyaan, kekhawatiran, atau permintaan terkait kebijakan privasi ini atau penanganan data pribadi Anda, jangan ragu untuk menghubungi kami:
+    </p>
+
+    <div class="contact-card">
+      <span class="contact-icon">📧</span>
+      <div>
+        <div style="font-size:11px; color:var(--text-dim); letter-spacing:2px; margin-bottom:4px;">EMAIL PRIVASI</div>
+        <a href="mailto:elsalamtechnology@gmail.com">elsalamtechnology@gmail.com</a>
+      </div>
+    </div>
+
+    <div class="contact-card" style="margin-top:12px;">
+      <span class="contact-icon">🌍</span>
+      <div>
+        <div style="font-size:11px; color:var(--text-dim); letter-spacing:2px; margin-bottom:4px;">WEBSITE RESMI</div>
+        <a href="https://elsalamtechnology.github.io" target="_blank">elsalamtechnology.github.io</a>
+      </div>
+    </div>
+
+    <div class="contact-card" style="margin-top:12px;">
+      <span class="contact-icon">🏢</span>
+      <div>
+        <div style="font-size:11px; color:var(--text-dim); letter-spacing:2px; margin-bottom:4px;">DEVELOPER</div>
+        <span style="color:var(--text); font-size:13px;">El-Salam Technology, Indonesia</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ─── -->
+  <footer>
+    <div class="footer-brand">DocuScan AI</div>
+    <p>© 2026 El-Salam Technology. Semua hak dilindungi.</p>
+    <p style="margin-top:8px;">Kebijakan Privasi ini berlaku mulai <strong>28 April 2026</strong></p>
+  </footer>
+
+</div><!-- /wrapper -->
+
+<script>
+  /* ── Cursor glow ── */
+  const glow = document.getElementById('cursorGlow');
+  document.addEventListener('mousemove', e => {
+    glow.style.left = e.clientX + 'px';
+    glow.style.top  = e.clientY + 'px';
+  });
+
+  /* ── Scroll progress bar ── */
+  const bar = document.getElementById('progressBar');
+  window.addEventListener('scroll', () => {
+    const total = document.documentElement.scrollHeight - window.innerHeight;
+    const pct   = (window.scrollY / total) * 100;
+    bar.style.width = pct + '%';
+  });
+
+  /* ── Intersection Observer for section reveal ── */
+  const sections = document.querySelectorAll('.section');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) e.target.classList.add('visible');
+    });
+  }, { threshold: 0.1 });
+  sections.forEach(s => observer.observe(s));
+
+  /* ── Floating TOC dot activation ── */
+  const dots = document.querySelectorAll('.toc-dot');
+  const sectionEls = [...document.querySelectorAll('section.section')];
+
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sectionEls.forEach(sec => {
+      if (window.scrollY >= sec.offsetTop - 200) current = sec.id;
+    });
+    dots.forEach(d => {
+      d.classList.toggle('active', d.dataset.target === current);
+    });
+  });
+
+  /* ── TOC dot click ── */
+  dots.forEach(d => {
+    d.addEventListener('click', () => {
+      document.getElementById(d.dataset.target)?.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+</script>
+
+</body>
+</html>

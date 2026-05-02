@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hapus Akun – PROGITA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:   #0D1B2A;
+      --teal:   #1A7A6E;
+      --teal-light: #22A99A;
+      --gold:   #C8973A;
+      --cream:  #F5F0E8;
+      --white:  #FFFFFF;
+      --red:    #C0392B;
+      --gray-1: #2C3E50;
+      --gray-2: #5D6D7E;
+      --gray-3: #BDC3C7;
+      --radius: 14px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--cream);
+      color: var(--navy);
+      min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse at 10% 0%, rgba(26,122,110,0.10) 0%, transparent 55%),
+        radial-gradient(ellipse at 90% 100%, rgba(200,151,58,0.08) 0%, transparent 55%);
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--navy);
+      color: var(--white);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      height: 68px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 20px rgba(13,27,42,0.3);
+    }
+    .logo-badge {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--teal), var(--teal-light));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Serif Display', serif;
+      font-size: 18px; font-weight: 700; color: var(--white);
+      flex-shrink: 0;
+    }
+    .header-text { flex: 1; }
+    .header-title { font-weight: 800; font-size: 15px; letter-spacing: 0.4px; }
+    .header-sub { font-size: 11px; color: var(--gray-3); margin-top: 1px; }
+    .gov-badge {
+      font-size: 10px; font-weight: 600; letter-spacing: 1px;
+      background: rgba(200,151,58,0.15); color: var(--gold);
+      border: 1px solid rgba(200,151,58,0.3);
+      padding: 4px 10px; border-radius: 99px;
+    }
+
+    /* ── MAIN LAYOUT ── */
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+
+    /* ── HERO BLOCK ── */
+    .hero {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .hero-icon {
+      width: 72px; height: 72px;
+      margin: 0 auto 20px;
+      background: linear-gradient(135deg, #fce8e6, #f9c0bc);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 34px;
+      box-shadow: 0 8px 24px rgba(192,57,43,0.18);
+    }
+    .hero h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(26px, 5vw, 36px);
+      color: var(--navy);
+      line-height: 1.25;
+      margin-bottom: 12px;
+    }
+    .hero p {
+      color: var(--gray-2);
+      font-size: 15px;
+      line-height: 1.7;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 28px 28px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(13,27,42,0.07);
+      box-shadow: 0 2px 16px rgba(13,27,42,0.06);
+    }
+    .card-title {
+      font-size: 13px; font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-title::before {
+      content: '';
+      display: inline-block;
+      width: 4px; height: 16px;
+      background: var(--teal);
+      border-radius: 2px;
+    }
+
+    /* ── STEPS ── */
+    .steps { list-style: none; }
+    .steps li {
+      display: flex; gap: 16px; align-items: flex-start;
+      padding: 14px 0;
+      border-bottom: 1px dashed rgba(13,27,42,0.08);
+    }
+    .steps li:last-child { border-bottom: none; padding-bottom: 0; }
+    .step-num {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--teal), var(--teal-light));
+      color: var(--white);
+      font-weight: 700; font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-text { font-size: 14.5px; line-height: 1.6; color: var(--gray-1); }
+    .step-text strong { color: var(--navy); }
+
+    /* ── DATA TABLE ── */
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    .data-table th {
+      background: var(--navy);
+      color: var(--white);
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+    }
+    .data-table th:first-child { border-radius: 8px 0 0 0; }
+    .data-table th:last-child { border-radius: 0 8px 0 0; }
+    .data-table td {
+      padding: 11px 14px;
+      border-bottom: 1px solid rgba(13,27,42,0.06);
+      vertical-align: top;
+      color: var(--gray-1);
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:nth-child(even) td { background: rgba(26,122,110,0.03); }
+    .tag-delete {
+      display: inline-block;
+      background: rgba(192,57,43,0.1);
+      color: var(--red);
+      font-size: 11px; font-weight: 600;
+      padding: 2px 8px; border-radius: 99px;
+    }
+    .tag-retain {
+      display: inline-block;
+      background: rgba(200,151,58,0.12);
+      color: var(--gold);
+      font-size: 11px; font-weight: 600;
+      padding: 2px 8px; border-radius: 99px;
+    }
+
+    /* ── WARNING BOX ── */
+    .warn-box {
+      background: rgba(192,57,43,0.06);
+      border: 1px solid rgba(192,57,43,0.2);
+      border-left: 4px solid var(--red);
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-bottom: 20px;
+      font-size: 13.5px;
+      color: var(--gray-1);
+      line-height: 1.65;
+    }
+    .warn-box strong { color: var(--red); }
+
+    /* ── FORM ── */
+    .form-group { margin-bottom: 18px; }
+    label {
+      display: block;
+      font-size: 13px; font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 7px;
+    }
+    label .req { color: var(--red); margin-left: 2px; }
+    input[type="text"], input[type="email"], textarea, select {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--gray-3);
+      border-radius: 9px;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--navy);
+      background: var(--white);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(26,122,110,0.12);
+    }
+    textarea { resize: vertical; min-height: 90px; }
+    .hint { font-size: 12px; color: var(--gray-2); margin-top: 5px; }
+
+    .checkbox-group {
+      display: flex; align-items: flex-start; gap: 10px;
+      margin-top: 4px;
+    }
+    .checkbox-group input[type="checkbox"] {
+      width: 18px; height: 18px;
+      margin-top: 1px; flex-shrink: 0;
+      accent-color: var(--teal);
+      cursor: pointer;
+    }
+    .checkbox-group label {
+      font-size: 13.5px; font-weight: 400;
+      color: var(--gray-1);
+      line-height: 1.55;
+      margin-bottom: 0;
+    }
+
+    /* ── SUBMIT BUTTON ── */
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, var(--red) 0%, #a93226 100%);
+      color: var(--white);
+      border: none;
+      border-radius: 10px;
+      padding: 15px;
+      font-family: inherit;
+      font-size: 15px; font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+      transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 4px 18px rgba(192,57,43,0.35);
+      margin-top: 6px;
+    }
+    .btn-submit:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 24px rgba(192,57,43,0.4); }
+    .btn-submit:active { transform: translateY(0); }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ── SUCCESS / ERROR STATES ── */
+    #status-msg {
+      display: none;
+      border-radius: 10px;
+      padding: 18px 20px;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-top: 16px;
+      text-align: center;
+    }
+    #status-msg.success {
+      display: block;
+      background: rgba(26,122,110,0.08);
+      border: 1.5px solid rgba(26,122,110,0.25);
+      color: var(--teal);
+    }
+    #status-msg.error {
+      display: block;
+      background: rgba(192,57,43,0.07);
+      border: 1.5px solid rgba(192,57,43,0.25);
+      color: var(--red);
+    }
+
+    /* ── CONTACT INFO ── */
+    .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 480px) { .contact-grid { grid-template-columns: 1fr; } }
+    .contact-item {
+      background: var(--cream);
+      border: 1px solid rgba(13,27,42,0.08);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 13.5px;
+    }
+    .contact-item .ci-label { font-size: 11px; color: var(--gray-2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+    .contact-item .ci-val { font-weight: 600; color: var(--navy); }
+    .contact-item a { color: var(--teal); text-decoration: none; }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 28px 20px;
+      font-size: 12px;
+      color: var(--gray-2);
+      border-top: 1px solid rgba(13,27,42,0.08);
+      margin-top: 20px;
+    }
+
+    /* ── LOADER ── */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-right: 8px; vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-badge">RHA</div>
+  <div class="header-text">
+    <div class="header-title">Request Hapus Akun</div>
+    <div class="header-sub">(Progita) Program Digitalisasi Arsip</div>
+  </div>
+  <span class="gov-badge">RESMI</span>
+</header>
+
+<main>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-icon">🗑️</div>
+    <h1>Permintaan Hapus Akun</h1>
+    <p>Sesuai ketentuan Google Play dan kebijakan privasi kami, Anda berhak mengajukan penghapusan akun beserta data pribadi Anda dari aplikasi <strong>PROGITA</strong>.</p>
+  </div>
+
+  <!-- LANGKAH-LANGKAH -->
+  <div class="card">
+    <div class="card-title">Cara Mengajukan Penghapusan Akun</div>
+    <ol class="steps">
+      <li>
+        <div class="step-num">1</div>
+        <div class="step-text"><strong>Isi formulir</strong> di halaman ini dengan data yang sesuai akun PROGITA Anda — nama lengkap, alamat email terdaftar, dan nomor HP yang digunakan saat registrasi.</div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div class="step-text"><strong>Pilih jenis permintaan:</strong> hapus akun saja, atau hapus akun <em>beserta seluruh data</em> yang terkait dengan akun Anda.</div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div class="step-text"><strong>Centang pernyataan konfirmasi</strong> bahwa Anda memahami bahwa tindakan ini tidak dapat dibatalkan.</div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div class="step-text"><strong>Kirim formulir.</strong> Anda akan menerima email konfirmasi penerimaan permintaan dalam 1×24 jam kerja.</div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div class="step-text"><strong>Proses penghapusan</strong> akan diselesaikan dalam <strong>maksimal 14 hari kalender</strong> sejak permintaan diterima dan diverifikasi oleh tim pengelola PROGITA.</div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- DATA YANG DIHAPUS / DISIMPAN -->
+  <div class="card">
+    <div class="card-title">Data yang Dihapus & Periode Retensi</div>
+    <p style="font-size:13.5px; color:var(--gray-2); margin-bottom:16px;">Tabel berikut menjelaskan jenis data yang dikumpulkan, status penghapusannya, dan periode retensi bila data tidak langsung dihapus.</p>
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Jenis Data</th>
+            <th>Status</th>
+            <th>Retensi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Nama lengkap & profil akun</td>
+            <td><span class="tag-delete">Dihapus</span></td>
+            <td>Segera setelah verifikasi</td>
+          </tr>
+          <tr>
+            <td>Alamat email & nomor HP</td>
+            <td><span class="tag-delete">Dihapus</span></td>
+            <td>Segera setelah verifikasi</td>
+          </tr>
+          <tr>
+            <td>Kata sandi (hash)</td>
+            <td><span class="tag-delete">Dihapus</span></td>
+            <td>Segera setelah verifikasi</td>
+          </tr>
+          <tr>
+            <td>Foto/avatar profil</td>
+            <td><span class="tag-delete">Dihapus</span></td>
+            <td>Segera setelah verifikasi</td>
+          </tr>
+          <tr>
+            <td>Riwayat login & sesi</td>
+            <td><span class="tag-delete">Dihapus</span></td>
+            <td>Segera setelah verifikasi</td>
+          </tr>
+          <tr>
+            <td>Dokumen yang diunggah petugas</td>
+            <td><span class="tag-retain">Disimpan</span></td>
+            <td>Permanen – arsip resmi pemerintah*</td>
+          </tr>
+          <tr>
+            <td>Log aktivitas dokumen (audit trail)</td>
+            <td><span class="tag-retain">Disimpan</span></td>
+            <td>5 tahun – kewajiban hukum*</td>
+          </tr>
+          <tr>
+            <td>Catatan layanan publik terkait</td>
+            <td><span class="tag-retain">Disimpan</span></td>
+            <td>5 tahun – kewajiban hukum*</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:12px; color:var(--gray-2); margin-top:12px; line-height:1.55;">* Data ini merupakan arsip dokumen resmi pemerintahan yang wajib disimpan berdasarkan Undang-Undang No. 43 Tahun 2009 tentang Kearsipan dan peraturan turunannya. Identitas pengguna pada data ini akan dianonimkan.</p>
+  </div>
+
+  <!-- WARNING -->
+  <div class="warn-box">
+    ⚠️ <strong>Perhatian:</strong> Penghapusan akun bersifat permanen dan tidak dapat dibatalkan. Setelah akun dihapus, Anda tidak dapat lagi mengakses fitur khusus petugas, riwayat layanan pribadi, atau memulihkan data yang telah dihapus.
+  </div>
+
+  <!-- FORM -->
+  <div class="card">
+    <div class="card-title">Formulir Permintaan Penghapusan</div>
+
+    <div class="form-group">
+      <label>Nama Lengkap <span class="req">*</span></label>
+      <input type="text" id="nama" placeholder="Sesuai data akun PROGITA Anda" required />
+    </div>
+
+    <div class="form-group">
+      <label>Alamat Email Terdaftar <span class="req">*</span></label>
+      <input type="email" id="email" placeholder="contoh@email.com" required />
+      <div class="hint">Email yang digunakan saat registrasi akun PROGITA</div>
+    </div>
+
+    <div class="form-group">
+      <label>Nomor HP Terdaftar <span class="req">*</span></label>
+      <input type="text" id="noHP" placeholder="08xxxxxxxxxx" required />
+    </div>
+
+    <div class="form-group">
+      <label>Jenis Permintaan <span class="req">*</span></label>
+      <select id="jenis">
+        <option value="">-- Pilih jenis permintaan --</option>
+        <option value="hapus_akun">Hapus akun saja (data arsip tetap ada)</option>
+        <option value="hapus_semua">Hapus akun beserta seluruh data pribadi</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Alasan Penghapusan (opsional)</label>
+      <textarea id="alasan" placeholder="Ceritakan alasan Anda mengajukan penghapusan akun..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <div class="checkbox-group">
+        <input type="checkbox" id="konfirmasi" />
+        <label for="konfirmasi">Saya memahami bahwa penghapusan akun bersifat <strong>permanen dan tidak dapat dibatalkan</strong>, serta data pribadi saya akan dihapus sesuai kebijakan di atas.</label>
+      </div>
+    </div>
+
+    <button class="btn-submit" id="btnKirim" onclick="kirimPermintaan()">
+      Kirim Permintaan Penghapusan
+    </button>
+
+    <div id="status-msg"></div>
+  </div>
+
+  <!-- KONTAK -->
+  <div class="card">
+    <div class="card-title">Butuh Bantuan?</div>
+    <p style="font-size:13.5px; color:var(--gray-2); margin-bottom:16px;">Jika Anda mengalami kendala dalam mengajukan permintaan, hubungi kami melalui:</p>
+    <div class="contact-grid">
+      <div class="contact-item">
+        <div class="ci-label">Email</div>
+        <div class="ci-val"><a href="mailto:admin@progita-jatisampurna.id">admin@progita-jatisampurna.id</a></div>
+      </div>
+      <div class="contact-item">
+        <div class="ci-label">Kantor</div>
+        <div class="ci-val">Kecamatan Jatisampurna, Kota Bekasi</div>
+      </div>
+      <div class="contact-item">
+        <div class="ci-label">Jam Layanan</div>
+        <div class="ci-val">Senin–Jumat, 08.00–16.00 WIB</div>
+      </div>
+      <div class="contact-item">
+        <div class="ci-label">Respons Permintaan</div>
+        <div class="ci-val">Maks. 14 hari kalender</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  © 2025 PROGITA – Program Digitalisasi Arsip Kecamatan Jatisampurna &nbsp;|&nbsp; Kota Bekasi, Jawa Barat<br>
+  <span style="margin-top:6px;display:inline-block;">Kebijakan Privasi &nbsp;·&nbsp; Syarat Layanan</span>
+</footer>
+
+<script>
+  // ── GANTI URL INI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA ──
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxOMKl-zbTVdGaTDYTyLWAfijjM6kENzz7VqWP74VlshqmvT4CkSKfhLKqrHzHX32xF/exec';
+
+  async function kirimPermintaan() {
+    const nama     = document.getElementById('nama').value.trim();
+    const email    = document.getElementById('email').value.trim();
+    const noHP     = document.getElementById('noHP').value.trim();
+    const jenis    = document.getElementById('jenis').value;
+    const alasan   = document.getElementById('alasan').value.trim();
+    const konfirmasi = document.getElementById('konfirmasi').checked;
+    const btn      = document.getElementById('btnKirim');
+    const statusEl = document.getElementById('status-msg');
+
+    // Validasi
+    if (!nama || !email || !noHP || !jenis) {
+      showStatus('error', '⚠️ Harap isi semua kolom yang wajib diisi (bertanda *).'); return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showStatus('error', '⚠️ Format alamat email tidak valid.'); return;
+    }
+    if (!konfirmasi) {
+      showStatus('error', '⚠️ Anda harus mencentang pernyataan konfirmasi terlebih dahulu.'); return;
+    }
+
+    // Kirim
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Mengirim permintaan...';
+    statusEl.style.display = 'none';
+
+    try {
+      const resp = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nama, email, noHP, jenis, alasan,
+          timestamp: new Date().toISOString() })
+      });
+      const data = await resp.json();
+
+      if (data.status === 'success') {
+        showStatus('success',
+          `✅ Permintaan Anda telah berhasil dikirim dan dicatat dengan ID: <strong>${data.id}</strong>.<br>
+           Konfirmasi akan dikirimkan ke <strong>${email}</strong> dalam 1×24 jam kerja.<br>
+           Proses penghapusan akan diselesaikan dalam <strong>maksimal 14 hari kalender</strong>.`);
+        ['nama','email','noHP','alasan'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('jenis').value = '';
+        document.getElementById('konfirmasi').checked = false;
+        btn.innerHTML = '✓ Permintaan Terkirim';
+      } else {
+        throw new Error(data.message || 'Terjadi kesalahan.');
+      }
+    } catch (err) {
+      showStatus('error', `❌ Gagal mengirim permintaan: ${err.message}. Silakan coba lagi atau hubungi admin.`);
+      btn.disabled = false;
+      btn.innerHTML = 'Kirim Permintaan Penghapusan';
+    }
+  }
+
+  function showStatus(type, html) {
+    const el = document.getElementById('status-msg');
+    el.className = type;
+    el.innerHTML = html;
+    el.style.display = 'block';
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+</script>
+
+</body>
+</html>

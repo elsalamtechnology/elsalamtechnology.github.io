@@ -458,8 +458,11 @@ footer{
 ═══════════════════════════════════════════ */
 #view-login{
   min-height:100vh;
-  display:flex;align-items:center;justify-content:center;
+  display:none;
   padding:32px;
+}
+#view-login.active{
+  display:flex;align-items:center;justify-content:center;
 }
 .login-box{
   background:var(--dark-card);
@@ -533,22 +536,25 @@ footer{
   width:260px;min-height:100vh;
   background:var(--dark-panel);
   border-right:1px solid var(--dark-border);
-  padding:32px 0;
+  padding:0;
   position:fixed;top:0;left:0;bottom:0;
   z-index:50;
   display:flex;flex-direction:column;
   transition:transform .3s;
+  overflow-y:auto;
+  overflow-x:hidden;
 }
 .sidebar-logo{
-  padding:0 24px 32px;
+  padding:28px 24px 24px;
   font-family:var(--font-display);font-size:1.2rem;font-weight:900;
   color:var(--neon-green);letter-spacing:4px;
   text-shadow:var(--glow-green);
   border-bottom:1px solid var(--dark-border);
-  margin-bottom:24px;
+  margin-bottom:16px;
+  flex-shrink:0;
 }
 .sidebar-logo span{display:block;font-size:.55rem;color:var(--text-muted);letter-spacing:3px;margin-top:4px;font-weight:400;}
-.sidebar-nav{flex:1;padding:0 12px;}
+.sidebar-nav{flex:1;padding:0 12px;display:flex;flex-direction:column;}
 .sidebar-section{
   font-family:var(--font-mono);font-size:.65rem;letter-spacing:3px;text-transform:uppercase;
   color:var(--text-muted);padding:0 12px;margin:16px 0 8px;
@@ -603,11 +609,27 @@ footer{
 }
 .btn-logout:hover{background:rgba(255,0,110,.2);box-shadow:var(--glow-pink);}
 
+/* Tombol keluar di topbar — hanya tampil di mobile */
+.btn-logout-topbar{
+  display:none;
+  align-items:center;gap:6px;
+  padding:8px 14px;
+  background:rgba(255,0,110,.1);
+  border:1px solid rgba(255,0,110,.25);
+  color:var(--neon-pink);
+  font-family:var(--font-display);font-size:.65rem;letter-spacing:2px;text-transform:uppercase;
+  transition:all .3s;white-space:nowrap;cursor:pointer;
+}
+.btn-logout-topbar:hover{background:rgba(255,0,110,.2);}
+
 /* MAIN CONTENT */
 .dash-main{
   margin-left:260px;flex:1;
-  padding:32px;
+  padding:80px 32px 32px;
   min-height:100vh;
+}
+.mobile-menu-btn{
+  display:none;
 }
 .dash-topbar{
   display:flex;align-items:center;justify-content:space-between;
@@ -880,13 +902,25 @@ tbody td:first-child{color:var(--text-primary);}
 @media(max-width:900px){
   .sidebar{transform:translateX(-100%);}
   .sidebar.open{transform:translateX(0);}
-  .dash-main{margin-left:0;}
+  .dash-main{margin-left:0;padding:0;}
+  .dash-topbar{
+    position:sticky;top:0;z-index:40;
+    background:rgba(6,13,26,.97);
+    backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--dark-border);
+    margin-bottom:24px;
+    padding:16px 20px;
+  }
   .mobile-menu-btn{
-    display:flex;align-items:center;gap:8px;
+    display:flex !important;align-items:center;gap:8px;
     background:none;border:1px solid var(--dark-border);
     color:var(--text-secondary);padding:8px 14px;
     font-family:var(--font-display);font-size:.65rem;letter-spacing:2px;
   }
+  .btn-logout-topbar{display:flex !important;}
+  .dash-time{font-size:.7rem;}
+  .stat-grid{margin:0 20px 24px;}
+  .panel{margin:0 20px 20px;}
 }
 @media(max-width:768px){
   header{padding:16px 20px;}
@@ -1882,8 +1916,8 @@ tbody td:first-child{color:var(--text-primary);}
     <div class="privacy-contact-box">
       <div class="sub">// TIM DIGIMURA SIAP MEMBANTU</div>
       <div style="font-family:var(--font-display);font-size:1.2rem;color:var(--neon-green);margin-bottom:24px;letter-spacing:3px;">HUBUNGI KAMI</div>
-      <div class="info">📱 WhatsApp: +62 812-3456-7890</div>
-      <div class="info">📧 Email: hello@digimura.id</div>
+      <div class="info">📱 WhatsApp: +628979511447</div>
+      <div class="info">📧 Email: elsalamtechnology@gmail.com</div>
       <div class="info">🕐 Layanan: Senin – Minggu, 07.00 – 22.00 WIB</div>
       <div style="margin-top:32px;">
         <button class="btn-wa" onclick="openWhatsApp()" style="margin:0 auto;">
@@ -1903,7 +1937,7 @@ tbody td:first-child{color:var(--text-primary);}
       <span class="footer-link" onclick="showView('download')">Download App</span>
       <span class="footer-link" onclick="openWhatsApp()">Kontak WA</span>
     </div>
-    <div class="footer-copy">© 2025 Digimura. Semua hak dilindungi.</div>
+    <div class="footer-copy">© 2026 Digimura by El-Salam Technology, Inc. Semua hak dilindungi.</div>
   </footer>
 </div>
 
@@ -1935,6 +1969,8 @@ tbody td:first-child{color:var(--text-primary);}
 ══════════════════════════════════════════ -->
 <div id="view-dashboard" class="view">
   <div class="dash-layout">
+    <!-- SIDEBAR OVERLAY (mobile backdrop) -->
+    <div id="sidebar-overlay" onclick="closeSidebar()" style="display:none;position:fixed;inset:0;z-index:49;background:rgba(2,8,16,.7);backdrop-filter:blur(4px);"></div>
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo">
@@ -1943,8 +1979,8 @@ tbody td:first-child{color:var(--text-primary);}
       </div>
       <nav class="sidebar-nav">
         <div class="sidebar-section">Navigasi</div>
-        <button class="nav-item active" onclick="showDash('overview')" data-section="overview">
-          <span class="icon">◈</span> Overview
+        <button class="nav-item" id="nav-overview" onclick="showDash('overview')" data-section="overview" style="display:none;">
+          <span class="icon">◈</span> Overview &amp; Konfigurasi
         </button>
         <button class="nav-item" onclick="showDash('products')" data-section="products">
           <span class="icon">⬡</span> Manajemen Produk
@@ -1959,7 +1995,7 @@ tbody td:first-child{color:var(--text-primary);}
           <div class="admin-avatar" id="admin-avatar-sidebar">A</div>
           <div>
             <div class="admin-name" id="admin-name-sidebar">Admin</div>
-            <div class="admin-role">SUPER ADMIN</div>
+            <div class="admin-role" id="admin-role-sidebar">ADMIN</div>
           </div>
         </div>
         <button class="btn-logout" onclick="doLogout()">⏻ KELUAR</button>
@@ -1970,10 +2006,13 @@ tbody td:first-child{color:var(--text-primary);}
     <main class="dash-main">
       <div class="dash-topbar">
         <div style="display:flex;align-items:center;gap:16px;">
-          <button class="mobile-menu-btn" id="mobile-menu-btn" onclick="toggleSidebar()" style="display:none;">≡ MENU</button>
+          <button class="mobile-menu-btn" id="mobile-menu-btn" onclick="toggleSidebar()">≡ MENU</button>
           <div class="dash-title">PANEL <span id="dash-section-title">OVERVIEW</span></div>
         </div>
-        <div class="dash-time" id="dash-clock">—</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="dash-time" id="dash-clock">—</div>
+          <button class="btn-logout-topbar" id="btn-logout-topbar" onclick="doLogout()" title="Keluar">⏻ KELUAR</button>
+        </div>
       </div>
 
       <!-- OVERVIEW -->
@@ -2623,8 +2662,17 @@ async function doLogin(){
     currentAdmin=adminData;
     document.getElementById('admin-name-sidebar').textContent=adminData.nama||adminData.username;
     document.getElementById('admin-avatar-sidebar').textContent=(adminData.nama||adminData.username)[0].toUpperCase();
+    // Tampilkan role yang benar
+    const roleEl=document.getElementById('admin-role-sidebar');
+    if(roleEl) roleEl.textContent=(adminData.level==='superadmin'?'SUPER ADMIN':'ADMIN');
+    // Tampil/sembunyikan menu Overview hanya untuk superadmin
+    const overviewNav=document.getElementById('nav-overview');
+    if(overviewNav) overviewNav.style.display=adminData.level==='superadmin'?'flex':'none';
     showView('dashboard');
     loadConfig();
+    // Jika bukan superadmin, langsung ke products
+    if(adminData.level!=='superadmin') showDash('products');
+    else showDash('overview');
     loadDashProducts();loadDashAdmins();loadOverviewStats();
     // Auto-test connection on login
     setTimeout(testConnection, 1000);
@@ -2636,6 +2684,9 @@ function doLogout(){
   currentAdmin=null;
   document.getElementById('login-user').value='';
   document.getElementById('login-pass').value='';
+  // Reset nav overview
+  const overviewNav=document.getElementById('nav-overview');
+  if(overviewNav) overviewNav.style.display='none';
   showView('public');
 }
 
@@ -2809,21 +2860,45 @@ document.getElementById('product-modal').addEventListener('click',function(e){
    DASHBOARD NAVIGATION
 ════════════════════════════════════════════ */
 function showDash(section){
+  // Guard: overview hanya untuk superadmin
+  if(section==='overview' && currentAdmin && currentAdmin.level!=='superadmin'){
+    showToast('Hanya Super Admin yang bisa mengakses halaman ini','error');
+    return;
+  }
   document.querySelectorAll('.dash-section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('section-'+section).classList.add('active');
-  document.querySelector(`[data-section="${section}"]`).classList.add('active');
+  const sec=document.getElementById('section-'+section);
+  if(sec) sec.classList.add('active');
+  const navBtn=document.querySelector(`[data-section="${section}"]`);
+  if(navBtn) navBtn.classList.add('active');
   const titles={overview:'OVERVIEW',products:'PRODUK',admins:'ADMIN'};
   document.getElementById('dash-section-title').textContent=titles[section]||section.toUpperCase();
   if(section==='products') loadDashProducts();
   if(section==='admins') loadDashAdmins();
   if(section==='overview'){loadOverviewStats();loadConfig();}
   // close sidebar on mobile
-  document.getElementById('sidebar').classList.remove('open');
+  closeSidebar();
 }
 
 function toggleSidebar(){
-  document.getElementById('sidebar').classList.toggle('open');
+  const s=document.getElementById('sidebar');
+  const overlay=document.getElementById('sidebar-overlay');
+  if(s){
+    s.classList.toggle('open');
+    if(s.classList.contains('open')){
+      document.body.style.overflow='hidden';
+      if(overlay) overlay.style.display='block';
+    } else {
+      document.body.style.overflow='';
+      if(overlay) overlay.style.display='none';
+    }
+  }
+}
+function closeSidebar(){
+  const s=document.getElementById('sidebar');
+  const overlay=document.getElementById('sidebar-overlay');
+  if(s){ s.classList.remove('open'); document.body.style.overflow=''; }
+  if(overlay) overlay.style.display='none';
 }
 
 /* ════════════════════════════════════════════
@@ -3009,29 +3084,46 @@ async function loadDashAdmins(){
     admins=DEMO_ADMINS;
   }
   allAdmins=admins;
+  const isSuperAdmin = currentAdmin && currentAdmin.level==='superadmin';
   if(!admins.length){
     tbody.innerHTML='<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">◉</div>Belum ada admin</div></td></tr>';
     return;
   }
-  tbody.innerHTML=admins.map(a=>`<tr>
-    <td><span style="font-family:var(--font-mono);color:var(--neon-cyan);">${a.username}</span></td>
-    <td>${a.nama}</td>
-    <td><span class="stock-badge ${a.level==='superadmin'?'in-stock':'low-stock'}" style="position:static;font-size:.65rem;">${(a.level||'admin').toUpperCase()}</span></td>
-    <td><div class="action-btns">
-      <button class="btn-edit" onclick="openAdminForm(${JSON.stringify(a).replace(/"/g,'&quot;')})">EDIT</button>
-      <button class="btn-delete" onclick="deleteAdmin('${a.id}','${a.username}')">HAPUS</button>
-    </div></td>
-  </tr>`).join('');
+  tbody.innerHTML=admins.map(a=>{
+    const isSARow = a.level==='superadmin';
+    // Admin biasa tidak bisa edit/hapus superadmin
+    const canModify = isSuperAdmin || !isSARow;
+    const actionBtns = canModify
+      ? `<button class="btn-edit" onclick="openAdminForm(${JSON.stringify(a).replace(/"/g,'&quot;')})">EDIT</button>
+         <button class="btn-delete" onclick="deleteAdmin('${a.id}','${a.username}','${a.level}')">HAPUS</button>`
+      : `<span style="font-family:var(--font-mono);font-size:.65rem;color:var(--text-muted);">— TERLINDUNGI</span>`;
+    return `<tr>
+      <td><span style="font-family:var(--font-mono);color:var(--neon-cyan);">${a.username}</span></td>
+      <td>${a.nama}</td>
+      <td><span class="stock-badge ${isSARow?'in-stock':'low-stock'}" style="position:static;font-size:.65rem;">${(a.level||'admin').toUpperCase()}</span></td>
+      <td><div class="action-btns">${actionBtns}</div></td>
+    </tr>`;
+  }).join('');
 }
 
 function openAdminForm(a){
+  // Admin biasa tidak bisa edit superadmin
+  if(a && a.level==='superadmin' && currentAdmin && currentAdmin.level!=='superadmin'){
+    showToast('Hanya Super Admin yang bisa mengedit Super Admin','error');return;
+  }
   editingAdminId=a?a.id:null;
   document.getElementById('admin-form-title').textContent=a?'// EDIT.ADMIN':'// TAMBAH.ADMIN';
   document.getElementById('af-id').value=a?a.id:'';
   document.getElementById('af-username').value=a?a.username:'';
   document.getElementById('af-nama').value=a?a.nama:'';
-  document.getElementById('af-level').value=a?a.level:'admin';
   document.getElementById('af-password').value='';
+  // Atur opsi level berdasarkan hak akses
+  const levelSelect=document.getElementById('af-level');
+  const isSuperAdmin = currentAdmin && currentAdmin.level==='superadmin';
+  levelSelect.innerHTML = isSuperAdmin
+    ? `<option value="admin">Admin</option><option value="superadmin">Super Admin</option>`
+    : `<option value="admin">Admin</option>`;
+  levelSelect.value=a?a.level:'admin';
   document.getElementById('admin-form-modal').classList.add('open');
 }
 function closeAdminForm(){
@@ -3043,11 +3135,15 @@ async function saveAdmin(){
   const username=document.getElementById('af-username').value.trim();
   const nama=document.getElementById('af-nama').value.trim();
   const password=document.getElementById('af-password').value;
+  const level=document.getElementById('af-level').value;
   if(!username||!nama){showToast('Isi field wajib','error');return;}
   if(!editingAdminId&&!password){showToast('Password wajib diisi untuk admin baru','error');return;}
-
+  // Guard: admin biasa tidak bisa set level superadmin
+  if(level==='superadmin' && currentAdmin && currentAdmin.level!=='superadmin'){
+    showToast('Hanya Super Admin yang bisa menetapkan level Super Admin','error');return;
+  }
   btn.disabled=true;btn.textContent='⟳ MENYIMPAN...';
-  const data={id:editingAdminId||'',username,nama,password,level:document.getElementById('af-level').value};
+  const data={id:editingAdminId||'',username,nama,password,level};
 
   if(SCRIPT_URL){
     const r=await api('saveAdmin',data);
@@ -3068,8 +3164,12 @@ async function saveAdmin(){
   btn.disabled=false;btn.textContent='💾 SIMPAN';
 }
 
-async function deleteAdmin(id, username){
+async function deleteAdmin(id, username, level){
   if(currentAdmin&&currentAdmin.username===username){showToast('Tidak bisa hapus akun sendiri','error');return;}
+  // Admin biasa tidak bisa hapus superadmin
+  if(level==='superadmin' && currentAdmin && currentAdmin.level!=='superadmin'){
+    showToast('Hanya Super Admin yang bisa menghapus Super Admin lain','error');return;
+  }
   showConfirm(`Hapus admin "${username}"?`, async()=>{
     if(SCRIPT_URL){
       const r=await api('deleteAdmin',{id});
@@ -3086,7 +3186,7 @@ async function deleteAdmin(id, username){
    WHATSAPP
 ════════════════════════════════════════════ */
 // ⚙️ GANTI NOMOR WA DI SINI
-const WA_NUMBER = '6281234567890';
+const WA_NUMBER = '628979511447';
 const WA_DEFAULT_MSG = 'Halo Digimura! Saya ingin bertanya tentang produk yang tersedia. 😊';
 
 function openWhatsApp(msg) {
@@ -3110,7 +3210,7 @@ function closeMobileNav(){
    DOWNLOAD APP HANDLERS
 ════════════════════════════════════════════ */
 // ⚙️ GANTI LINK PLAY STORE & APK DI SINI
-const PLAY_STORE_URL = '#'; // contoh: 'https://play.google.com/store/apps/details?id=com.digimura'
+const PLAY_STORE_URL = '#'; // contoh: 'https://play.google.com/store/apps/details?id=com.elsalamtechnology.digimura'
 const APK_DIRECT_URL = '#'; // contoh: 'https://drive.google.com/file/d/XXXX/view'
 
 function handlePlayStore(e){
@@ -3146,13 +3246,6 @@ function showView(name){
   const el = document.getElementById('view-'+name);
   if(el){
     el.classList.add('active');
-    // Fix login flex layout
-    if(name==='login'){
-      el.style.display='flex';
-      el.style.alignItems='center';
-      el.style.justifyContent='center';
-      el.style.minHeight='100vh';
-    }
   }
   // Show floating WA only on public, download, privacy pages
   const waBtn = document.getElementById('wa-float-btn');
@@ -3169,8 +3262,13 @@ function showView(name){
    RESPONSIVE: SHOW MOBILE MENU BTN IN DASH
 ════════════════════════════════════════════ */
 function handleResize(){
-  const btn=document.getElementById('mobile-menu-btn');
-  if(btn) btn.style.display=window.innerWidth<=900?'flex':'none';
+  // CSS media query handles visibility now
+  // Sidebar overlay on mobile click
+  const sidebar = document.getElementById('sidebar');
+  if(window.innerWidth > 900 && sidebar){
+    sidebar.classList.remove('open');
+    document.body.style.overflow='';
+  }
 }
 window.addEventListener('resize',handleResize);handleResize();
 

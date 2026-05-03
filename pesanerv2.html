@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pesaner</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          primary: "#0077CC",
+          "primary-light": "#E8F4FD",
+          "primary-dark": "#005FA3",
+          surface: "#F5F7FA",
+          "surface-card": "#FFFFFF",
+          "on-surface": "#1A1D23",
+          "on-surface-muted": "#6B7280",
+          accent: "#00C98D",
+          danger: "#EF4444"
+        },
+        fontFamily: { sans: ["Plus Jakarta Sans", "sans-serif"] }
+      }
+    }
+  };
+</script>
+<style>
+  * { font-family: 'Plus Jakarta Sans', sans-serif; }
+  body { background: #F5F7FA; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+  .fill-icon { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+  .card { background: #fff; border-radius: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .btn-primary { background: #0077CC; color: #fff; border-radius: 999px; font-weight: 700; padding: 8px 20px; transition: all 0.15s; }
+  .btn-primary:hover { background: #005FA3; }
+  .btn-outline { border: 1.5px solid #D1D5DB; border-radius: 999px; font-weight: 600; padding: 7px 18px; transition: all 0.15s; background: #fff; }
+  .btn-outline:hover { background: #F3F4F6; }
+  .nav-link { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; font-weight: 500; font-size: 14px; color: #4B5563; transition: all 0.15s; cursor: pointer; }
+  .nav-link:hover { background: #EFF6FF; color: #0077CC; }
+  .nav-link.active { background: #EFF6FF; color: #0077CC; font-weight: 700; }
+  .post-card { border-radius: 16px; border: 1px solid #E5E7EB; background: #fff; padding: 16px; margin-bottom: 12px; transition: box-shadow 0.15s; }
+  .post-card:hover { box-shadow: 0 4px 16px rgba(0,119,204,0.08); }
+  .action-btn { display: flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 500; color: #6B7280; transition: all 0.15s; cursor: pointer; background: transparent; border: none; }
+  .action-btn:hover { background: #F3F4F6; }
+  .action-btn.liked { color: #EF4444; }
+  .action-btn.liked:hover { background: #FEF2F2; }
+  .avatar { border-radius: 999px; object-fit: cover; background: #E0E7EF; }
+  .tab-btn { flex: 1; padding: 12px 8px; font-size: 13px; font-weight: 600; color: #6B7280; border-bottom: 2.5px solid transparent; transition: all 0.15s; cursor: pointer; background: transparent; border-left: none; border-right: none; border-top: none; }
+  .tab-btn.active { color: #0077CC; border-bottom-color: #0077CC; }
+  .spinner { border: 3px solid #E5E7EB; border-top-color: #0077CC; border-radius: 50%; width: 28px; height: 28px; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; display: flex; align-items: center; justify-content: center; }
+  .modal { background: #fff; border-radius: 20px; padding: 28px; max-width: 500px; width: 94%; box-shadow: 0 8px 40px rgba(0,0,0,0.18); }
+  textarea { resize: none; outline: none; border: 1.5px solid #E5E7EB; border-radius: 12px; padding: 12px; font-size: 15px; width: 100%; transition: border 0.15s; }
+  textarea:focus { border-color: #0077CC; }
+  input[type="text"], input[type="password"] { outline: none; border: 1.5px solid #E5E7EB; border-radius: 10px; padding: 10px 14px; font-size: 14px; width: 100%; transition: border 0.15s; }
+  input[type="text"]:focus, input[type="password"]:focus { border-color: #0077CC; }
+  .toast { position: fixed; bottom: 24px; right: 24px; background: #1A1D23; color: #fff; padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 500; z-index: 999; box-shadow: 0 4px 20px rgba(0,0,0,0.2); animation: slideUp 0.3s ease; }
+  @keyframes slideUp { from { opacity:0; transform: translateY(16px); } to { opacity:1; transform: translateY(0); } }
+  #app-login { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #EFF6FF 0%, #F0FDF4 100%); }
+  .login-card { background: #fff; border-radius: 24px; padding: 40px; max-width: 400px; width: 92%; box-shadow: 0 8px 40px rgba(0,119,204,0.12); }
+  #app-main { display: none; }
+  .cover-placeholder { width: 100%; height: 160px; background: linear-gradient(120deg, #0077CC 0%, #00C98D 100%); border-radius: 0 0 0 0; }
+</style>
+</head>
+<body class="text-on-surface">
+
+<!-- ============ LOGIN SCREEN ============ -->
+<div id="app-login">
+  <div class="login-card">
+    <div class="text-center mb-8">
+      <div class="text-3xl font-black text-primary tracking-tight mb-1">Pesaner</div>
+      <p class="text-sm text-on-surface-muted">Platform Sosial Berbasis Spreadsheet</p>
+    </div>
+    <div id="login-error" class="hidden mb-4 p-3 bg-red-50 text-red-600 rounded-10 text-sm rounded-xl"></div>
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs font-600 text-on-surface-muted mb-1 ml-1">Username</label>
+        <input type="text" id="login-username" placeholder="Masukkan username" autocomplete="username"/>
+      </div>
+      <div>
+        <label class="block text-xs font-600 text-on-surface-muted mb-1 ml-1">Password</label>
+        <input type="password" id="login-password" placeholder="Masukkan password" autocomplete="current-password"/>
+      </div>
+      <button onclick="handleLogin()" id="btn-login" class="btn-primary w-full mt-2 py-3 text-sm">
+        Masuk
+      </button>
+    </div>
+    <div class="mt-4 text-center">
+      <button onclick="showRegisterModal()" class="text-primary text-sm font-semibold hover:underline">Belum punya akun? Daftar</button>
+    </div>
+    <div id="login-loading" class="hidden mt-4 flex justify-center">
+      <div class="spinner"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MAIN APP ============ -->
+<div id="app-main">
+  <!-- Top Header -->
+  <header class="fixed top-0 w-full z-50 bg-white border-b border-gray-100 shadow-sm">
+    <div class="flex justify-between items-center h-14 px-4 md:px-6 max-w-screen-xl mx-auto">
+      <span class="text-xl font-black text-primary tracking-tight">Pesaner</span>
+      <div class="hidden md:flex items-center gap-6 text-sm font-semibold text-on-surface-muted">
+        <button onclick="switchTab('feed')" class="hover:text-primary transition-colors">Feed</button>
+        <button onclick="switchTab('profile')" class="hover:text-primary transition-colors">Profil</button>
+        <button onclick="switchTab('admin')" id="nav-admin" class="hidden hover:text-primary transition-colors">Admin</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="openPostModal()" class="btn-primary text-sm py-2 px-4 hidden md:block">+ Post</button>
+        <img id="header-avatar" src="https://ui-avatars.com/api/?name=U&background=0077CC&color=fff&size=64" class="avatar w-8 h-8 cursor-pointer" onclick="switchTab('profile')"/>
+      </div>
+    </div>
+  </header>
+
+  <div class="flex min-h-screen pt-14">
+    <!-- Sidebar (Desktop) -->
+    <aside class="hidden md:flex fixed left-0 top-14 h-[calc(100vh-56px)] w-56 bg-white border-r border-gray-100 flex-col p-4 gap-1 z-40">
+      <div class="mb-5 px-2">
+        <div class="text-xs text-on-surface-muted font-semibold uppercase tracking-wider">Navigasi</div>
+      </div>
+      <div class="nav-link active" id="nav-feed-side" onclick="switchTab('feed')">
+        <span class="material-symbols-outlined text-lg">home</span> Feed
+      </div>
+      <div class="nav-link" id="nav-profile-side" onclick="switchTab('profile')">
+        <span class="material-symbols-outlined text-lg">person</span> Profil
+      </div>
+      <div class="nav-link" id="nav-admin-side" onclick="switchTab('admin')" style="display:none">
+        <span class="material-symbols-outlined text-lg">admin_panel_settings</span> Admin
+      </div>
+      <div class="mt-auto">
+        <button onclick="openPostModal()" class="btn-primary w-full text-sm py-2 mb-3">+ Buat Post</button>
+        <div class="nav-link text-red-500 hover:bg-red-50" onclick="handleLogout()">
+          <span class="material-symbols-outlined text-lg">logout</span> Keluar
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 md:ml-56 min-h-screen">
+
+      <!-- ===== FEED TAB ===== -->
+      <div id="tab-feed" class="max-w-[600px] mx-auto px-3 py-6">
+        <!-- Create post box -->
+        <div class="card p-4 mb-5">
+          <div class="flex gap-3 items-center">
+            <img id="feed-avatar" src="" class="avatar w-10 h-10"/>
+            <button onclick="openPostModal()" class="flex-1 text-left text-on-surface-muted text-sm px-4 py-3 rounded-full bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-200 font-medium">
+              Apa yang ingin kamu bagikan?
+            </button>
+          </div>
+        </div>
+        <!-- Posts list -->
+        <div id="feed-loading" class="flex justify-center py-10">
+          <div class="spinner"></div>
+        </div>
+        <div id="posts-container"></div>
+        <div id="feed-empty" class="hidden text-center py-14 text-on-surface-muted">
+          <span class="material-symbols-outlined text-5xl mb-3 opacity-30">feed</span>
+          <p class="text-sm">Belum ada post. Jadilah yang pertama!</p>
+        </div>
+      </div>
+
+      <!-- ===== PROFILE TAB ===== -->
+      <div id="tab-profile" class="hidden">
+        <!-- Cover -->
+        <div class="cover-placeholder"></div>
+        <div class="max-w-[600px] mx-auto px-4 relative">
+          <div class="absolute -top-12 left-4">
+            <img id="profile-avatar" src="" class="avatar w-24 h-24 border-4 border-white shadow"/>
+          </div>
+          <div class="flex justify-end pt-3 pb-2">
+            <button onclick="openEditProfileModal()" class="btn-outline text-sm">Edit Profil</button>
+          </div>
+          <div class="mt-6">
+            <h1 id="profile-name" class="text-2xl font-black text-on-surface"></h1>
+            <p id="profile-username-display" class="text-on-surface-muted text-sm font-medium mt-0.5"></p>
+            <p id="profile-bio" class="mt-2 text-sm text-on-surface leading-relaxed"></p>
+            <div class="flex gap-5 mt-3 pb-4 border-b border-gray-100">
+              <div class="flex gap-1 items-baseline">
+                <span id="profile-posts-count" class="font-bold text-sm text-on-surface">0</span>
+                <span class="text-xs text-on-surface-muted">Posts</span>
+              </div>
+            </div>
+          </div>
+          <!-- Profile Tabs -->
+          <div class="flex mt-1 border-b border-gray-100">
+            <button class="tab-btn active" id="ptab-posts" onclick="switchProfileTab('posts')">Posts</button>
+          </div>
+          <div id="profile-posts-loading" class="hidden flex justify-center py-8"><div class="spinner"></div></div>
+          <div id="profile-posts-container" class="space-y-3 mt-4 pb-24"></div>
+          <div id="profile-posts-empty" class="hidden text-center py-12 text-on-surface-muted">
+            <span class="material-symbols-outlined text-4xl opacity-30">article</span>
+            <p class="text-sm mt-2">Belum ada post</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ADMIN TAB ===== -->
+      <div id="tab-admin" class="hidden max-w-[800px] mx-auto px-4 py-6">
+        <h2 class="text-xl font-black mb-4">Panel Admin</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="card p-5">
+            <div class="text-xs text-on-surface-muted font-semibold uppercase tracking-wider mb-1">Total Users</div>
+            <div id="admin-users-count" class="text-3xl font-black text-primary">—</div>
+          </div>
+          <div class="card p-5">
+            <div class="text-xs text-on-surface-muted font-semibold uppercase tracking-wider mb-1">Total Posts</div>
+            <div id="admin-posts-count" class="text-3xl font-black text-accent">—</div>
+          </div>
+          <div class="card p-5">
+            <div class="text-xs text-on-surface-muted font-semibold uppercase tracking-wider mb-1">Total Likes</div>
+            <div id="admin-likes-count" class="text-3xl font-black text-red-400">—</div>
+          </div>
+        </div>
+        <div class="card p-5">
+          <h3 class="font-bold mb-3 text-base">Semua Post</h3>
+          <div id="admin-posts-loading" class="flex justify-center py-6"><div class="spinner"></div></div>
+          <div id="admin-posts-table"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Mobile Bottom Nav -->
+  <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-100 z-50 flex justify-around py-2">
+    <button onclick="switchTab('feed')" class="flex flex-col items-center gap-0.5 px-3 py-1" id="mnav-feed">
+      <span class="material-symbols-outlined text-on-surface-muted">home</span>
+      <span class="text-[10px] font-semibold text-on-surface-muted">Feed</span>
+    </button>
+    <button onclick="openPostModal()" class="flex flex-col items-center gap-0.5 px-3 py-1">
+      <span class="material-symbols-outlined text-primary">add_circle</span>
+      <span class="text-[10px] font-semibold text-primary">Post</span>
+    </button>
+    <button onclick="switchTab('profile')" class="flex flex-col items-center gap-0.5 px-3 py-1" id="mnav-profile">
+      <span class="material-symbols-outlined text-on-surface-muted">person</span>
+      <span class="text-[10px] font-semibold text-on-surface-muted">Profil</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ============ MODALS ============ -->
+
+<!-- New Post Modal -->
+<div id="post-modal" class="modal-overlay hidden" onclick="if(event.target===this)closePostModal()">
+  <div class="modal">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-black text-lg">Buat Post Baru</h3>
+      <button onclick="closePostModal()" class="text-on-surface-muted hover:text-on-surface p-1 rounded-full">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="flex gap-3 mb-3">
+      <img id="post-modal-avatar" src="" class="avatar w-10 h-10 mt-0.5"/>
+      <textarea id="post-content" rows="4" placeholder="Apa yang ingin kamu bagikan hari ini?"></textarea>
+    </div>
+    <div class="flex justify-between items-center">
+      <span id="char-count" class="text-xs text-on-surface-muted">0/280</span>
+      <button onclick="submitPost()" id="btn-submit-post" class="btn-primary text-sm py-2 px-5">Posting</button>
+    </div>
+    <div id="post-loading" class="hidden flex justify-center mt-3"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div id="edit-profile-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeEditProfileModal()">
+  <div class="modal">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-black text-lg">Edit Profil</h3>
+      <button onclick="closeEditProfileModal()" class="text-on-surface-muted hover:text-on-surface p-1 rounded-full">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs font-semibold text-on-surface-muted mb-1 ml-1">Nama Lengkap</label>
+        <input type="text" id="edit-name" placeholder="Nama lengkap"/>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-on-surface-muted mb-1 ml-1">Bio</label>
+        <textarea id="edit-bio" rows="3" placeholder="Ceritakan sedikit tentang dirimu..."></textarea>
+      </div>
+    </div>
+    <div class="flex gap-3 mt-5">
+      <button onclick="closeEditProfileModal()" class="btn-outline flex-1 text-sm py-2">Batal</button>
+      <button onclick="saveProfile()" id="btn-save-profile" class="btn-primary flex-1 text-sm py-2">Simpan</button>
+    </div>
+    <div id="edit-loading" class="hidden flex justify-center mt-3"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<!-- Register Modal -->
+<div id="register-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeRegisterModal()">
+  <div class="modal">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-black text-lg">Daftar Akun</h3>
+      <button onclick="closeRegisterModal()" class="text-on-surface-muted hover:text-on-surface p-1 rounded-full">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div id="register-error" class="hidden mb-3 p-3 bg-red-50 text-red-600 rounded-xl text-sm"></div>
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs font-semibold text-on-surface-muted mb-1 ml-1">Nama Lengkap</label>
+        <input type="text" id="reg-name" placeholder="Nama lengkap"/>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-on-surface-muted mb-1 ml-1">Username</label>
+        <input type="text" id="reg-username" placeholder="username (tanpa spasi)"/>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-on-surface-muted mb-1 ml-1">Password</label>
+        <input type="password" id="reg-password" placeholder="Minimal 6 karakter"/>
+      </div>
+    </div>
+    <div class="flex gap-3 mt-5">
+      <button onclick="closeRegisterModal()" class="btn-outline flex-1 text-sm py-2">Batal</button>
+      <button onclick="handleRegister()" id="btn-register" class="btn-primary flex-1 text-sm py-2">Daftar</button>
+    </div>
+    <div id="register-loading" class="hidden flex justify-center mt-3"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<!-- ============ SCRIPT ============ -->
+<script>
+// ======= CONFIG =======
+// Ganti URL ini dengan URL Web App Google Apps Script Anda setelah deploy
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw4W3Lo4yel4abitY3msgb_DieCR4hFcl7s85NHIemCqI55irtkGgjvQ9qZWVUqmcH9/exec';
+
+// ======= STATE =======
+let currentUser = null;
+let allPosts = [];
+
+// ======= HELPERS =======
+function avatarUrl(name) {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name||'U')}&background=0077CC&color=fff&size=128&bold=true`;
+}
+
+function timeAgo(dateStr) {
+  const d = new Date(dateStr);
+  const diff = (Date.now() - d.getTime()) / 1000;
+  if (diff < 60) return 'baru saja';
+  if (diff < 3600) return Math.floor(diff/60) + 'm';
+  if (diff < 86400) return Math.floor(diff/3600) + 'j';
+  return Math.floor(diff/86400) + 'h';
+}
+
+function showToast(msg, type='success') {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.style.background = type === 'error' ? '#EF4444' : '#1A1D23';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+function setLoading(id, show) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('hidden', !show);
+}
+
+async function apiCall(action, data = {}) {
+  const params = new URLSearchParams({ action, ...data });
+  const url = SCRIPT_URL + '?' + params.toString();
+  const resp = await fetch(url, { method: 'GET', redirect: 'follow' });
+  const text = await resp.text();
+  try { return JSON.parse(text); }
+  catch(e) { throw new Error('Server error: ' + text.substring(0,200)); }
+}
+
+// ======= AUTH =======
+async function handleLogin() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!username || !password) { showLoginError('Isi username dan password'); return; }
+
+  setLoading('login-loading', true);
+  document.getElementById('btn-login').disabled = true;
+  try {
+    const res = await apiCall('login', { username, password });
+    if (res.success) {
+      currentUser = res.user;
+      localStorage.setItem('pesaner_user', JSON.stringify(currentUser));
+      initApp();
+    } else {
+      showLoginError(res.message || 'Login gagal');
+    }
+  } catch(e) {
+    showLoginError('Gagal terhubung ke server');
+  }
+  setLoading('login-loading', false);
+  document.getElementById('btn-login').disabled = false;
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+async function handleRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const username = document.getElementById('reg-username').value.trim().toLowerCase().replace(/\s+/g,'');
+  const password = document.getElementById('reg-password').value;
+  if (!name || !username || !password) { showRegisterError('Semua field wajib diisi'); return; }
+  if (password.length < 6) { showRegisterError('Password minimal 6 karakter'); return; }
+
+  setLoading('register-loading', true);
+  document.getElementById('btn-register').disabled = true;
+  try {
+    const res = await apiCall('register', { name, username, password });
+    if (res.success) {
+      closeRegisterModal();
+      document.getElementById('login-username').value = username;
+      showToast('Akun berhasil dibuat! Silakan login.');
+    } else {
+      showRegisterError(res.message || 'Pendaftaran gagal');
+    }
+  } catch(e) {
+    showRegisterError('Gagal terhubung ke server');
+  }
+  setLoading('register-loading', false);
+  document.getElementById('btn-register').disabled = false;
+}
+
+function showRegisterError(msg) {
+  const el = document.getElementById('register-error');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+function handleLogout() {
+  currentUser = null;
+  localStorage.removeItem('pesaner_user');
+  document.getElementById('app-main').style.display = 'none';
+  document.getElementById('app-login').style.display = 'flex';
+}
+
+// ======= INIT =======
+function initApp() {
+  const saved = localStorage.getItem('pesaner_user');
+  if (saved) currentUser = JSON.parse(saved);
+  if (!currentUser) return;
+
+  document.getElementById('app-login').style.display = 'none';
+  document.getElementById('app-main').style.display = 'block';
+
+  // Update UI with user data
+  const av = avatarUrl(currentUser.name);
+  document.getElementById('header-avatar').src = av;
+  document.getElementById('feed-avatar').src = av;
+  document.getElementById('post-modal-avatar').src = av;
+  document.getElementById('profile-avatar').src = av;
+
+  // Show admin nav if admin
+  if (currentUser.role === 'admin') {
+    document.getElementById('nav-admin').classList.remove('hidden');
+    document.getElementById('nav-admin-side').style.display = 'flex';
+  }
+
+  switchTab('feed');
+}
+
+// ======= TABS =======
+function switchTab(tab) {
+  ['feed','profile','admin'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('hidden', t !== tab);
+  });
+  // Update sidebar active
+  document.querySelectorAll('[id^="nav-"][id$="-side"]').forEach(el => el.classList.remove('active'));
+  const sideEl = document.getElementById('nav-'+tab+'-side');
+  if (sideEl) sideEl.classList.add('active');
+
+  if (tab === 'feed') loadFeed();
+  if (tab === 'profile') loadProfile();
+  if (tab === 'admin') loadAdmin();
+}
+
+// ======= FEED =======
+async function loadFeed() {
+  document.getElementById('feed-loading').classList.remove('hidden');
+  document.getElementById('posts-container').innerHTML = '';
+  document.getElementById('feed-empty').classList.add('hidden');
+  try {
+    const res = await apiCall('getPosts');
+    allPosts = res.posts || [];
+    renderPosts(allPosts, 'posts-container');
+    document.getElementById('feed-empty').classList.toggle('hidden', allPosts.length > 0);
+  } catch(e) {
+    showToast('Gagal memuat feed', 'error');
+  }
+  document.getElementById('feed-loading').classList.add('hidden');
+}
+
+function renderPosts(posts, containerId) {
+  const container = document.getElementById(containerId);
+  if (!posts.length) { container.innerHTML = ''; return; }
+  container.innerHTML = posts.map(p => postCard(p)).join('');
+}
+
+function postCard(p) {
+  const av = avatarUrl(p.authorName);
+  const liked = p.likedBy && p.likedBy.includes(currentUser.username);
+  const isOwner = p.authorUsername === currentUser.username || currentUser.role === 'admin';
+  return `<div class="post-card" id="post-${p.id}">
+    <div class="flex gap-3">
+      <img src="${av}" class="avatar w-10 h-10 flex-shrink-0"/>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <span class="font-bold text-sm">${escHtml(p.authorName)}</span>
+            <span class="text-on-surface-muted text-xs ml-1">@${escHtml(p.authorUsername)}</span>
+            <span class="text-on-surface-muted text-xs ml-1">· ${timeAgo(p.createdAt)}</span>
+          </div>
+          ${isOwner ? `<button onclick="deletePost('${p.id}')" class="text-on-surface-muted hover:text-red-500 transition-colors p-1 rounded-full" title="Hapus">
+            <span class="material-symbols-outlined" style="font-size:18px">delete</span>
+          </button>` : ''}
+        </div>
+        <p class="text-sm mt-1 mb-3 leading-relaxed">${escHtml(p.content)}</p>
+        <div class="flex gap-1">
+          <button onclick="toggleLike('${p.id}')" class="action-btn ${liked?'liked':''}">
+            <span class="material-symbols-outlined ${liked?'fill-icon':''}" style="font-size:18px">favorite</span>
+            <span id="like-count-${p.id}">${p.likes||0}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function escHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ======= POST MODAL =======
+function openPostModal() {
+  document.getElementById('post-content').value = '';
+  document.getElementById('char-count').textContent = '0/280';
+  document.getElementById('post-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('post-content').focus(), 100);
+}
+function closePostModal() { document.getElementById('post-modal').classList.add('hidden'); }
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('post-content').addEventListener('input', function() {
+    document.getElementById('char-count').textContent = this.value.length + '/280';
+  });
+});
+
+async function submitPost() {
+  const content = document.getElementById('post-content').value.trim();
+  if (!content) { showToast('Tulis sesuatu dulu!', 'error'); return; }
+  if (content.length > 280) { showToast('Maksimal 280 karakter', 'error'); return; }
+
+  setLoading('post-loading', true);
+  document.getElementById('btn-submit-post').disabled = true;
+  try {
+    const res = await apiCall('createPost', { username: currentUser.username, content });
+    if (res.success) {
+      closePostModal();
+      showToast('Post berhasil dibuat!');
+      loadFeed();
+    } else {
+      showToast(res.message || 'Gagal membuat post', 'error');
+    }
+  } catch(e) {
+    showToast('Gagal terhubung ke server', 'error');
+  }
+  setLoading('post-loading', false);
+  document.getElementById('btn-submit-post').disabled = false;
+}
+
+// ======= LIKE =======
+async function toggleLike(postId) {
+  try {
+    const res = await apiCall('toggleLike', { username: currentUser.username, postId });
+    if (res.success) {
+      document.getElementById('like-count-' + postId).textContent = res.likes;
+      const btn = document.querySelector(`#post-${postId} .action-btn`);
+      const icon = btn.querySelector('.material-symbols-outlined');
+      btn.classList.toggle('liked', res.liked);
+      icon.classList.toggle('fill-icon', res.liked);
+    }
+  } catch(e) { showToast('Gagal', 'error'); }
+}
+
+// ======= DELETE POST =======
+async function deletePost(postId) {
+  if (!confirm('Hapus post ini?')) return;
+  try {
+    const res = await apiCall('deletePost', { username: currentUser.username, postId });
+    if (res.success) {
+      document.getElementById('post-' + postId)?.remove();
+      showToast('Post dihapus');
+    } else {
+      showToast(res.message || 'Gagal menghapus', 'error');
+    }
+  } catch(e) { showToast('Gagal', 'error'); }
+}
+
+// ======= PROFILE =======
+async function loadProfile() {
+  document.getElementById('profile-name').textContent = currentUser.name || '';
+  document.getElementById('profile-username-display').textContent = '@' + (currentUser.username || '');
+  document.getElementById('profile-bio').textContent = currentUser.bio || '';
+  document.getElementById('profile-avatar').src = avatarUrl(currentUser.name);
+
+  document.getElementById('profile-posts-loading').classList.remove('hidden');
+  try {
+    const res = await apiCall('getUserPosts', { username: currentUser.username });
+    const posts = res.posts || [];
+    document.getElementById('profile-posts-count').textContent = posts.length;
+    renderPosts(posts, 'profile-posts-container');
+    document.getElementById('profile-posts-empty').classList.toggle('hidden', posts.length > 0);
+  } catch(e) { showToast('Gagal memuat profil', 'error'); }
+  document.getElementById('profile-posts-loading').classList.add('hidden');
+}
+
+function switchProfileTab(t) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('ptab-'+t).classList.add('active');
+}
+
+// ======= EDIT PROFILE =======
+function openEditProfileModal() {
+  document.getElementById('edit-name').value = currentUser.name || '';
+  document.getElementById('edit-bio').value = currentUser.bio || '';
+  document.getElementById('edit-profile-modal').classList.remove('hidden');
+}
+function closeEditProfileModal() { document.getElementById('edit-profile-modal').classList.add('hidden'); }
+
+async function saveProfile() {
+  const name = document.getElementById('edit-name').value.trim();
+  const bio = document.getElementById('edit-bio').value.trim();
+  if (!name) { showToast('Nama tidak boleh kosong', 'error'); return; }
+
+  setLoading('edit-loading', true);
+  document.getElementById('btn-save-profile').disabled = true;
+  try {
+    const res = await apiCall('updateProfile', { username: currentUser.username, name, bio });
+    if (res.success) {
+      currentUser.name = name;
+      currentUser.bio = bio;
+      localStorage.setItem('pesaner_user', JSON.stringify(currentUser));
+      closeEditProfileModal();
+      showToast('Profil berhasil diperbarui!');
+      loadProfile();
+    } else {
+      showToast(res.message || 'Gagal', 'error');
+    }
+  } catch(e) { showToast('Gagal', 'error'); }
+  setLoading('edit-loading', false);
+  document.getElementById('btn-save-profile').disabled = false;
+}
+
+// ======= ADMIN =======
+async function loadAdmin() {
+  if (currentUser.role !== 'admin') return;
+  try {
+    const res = await apiCall('getAdminStats');
+    document.getElementById('admin-users-count').textContent = res.users || 0;
+    document.getElementById('admin-posts-count').textContent = res.posts || 0;
+    document.getElementById('admin-likes-count').textContent = res.likes || 0;
+
+    const postsRes = await apiCall('getPosts');
+    const posts = postsRes.posts || [];
+    document.getElementById('admin-posts-loading').classList.add('hidden');
+    document.getElementById('admin-posts-table').innerHTML = posts.length === 0 ? '<p class="text-sm text-on-surface-muted">Belum ada post</p>' :
+      `<table class="w-full text-sm"><thead><tr class="text-left border-b border-gray-100">
+        <th class="pb-2 font-semibold">Penulis</th>
+        <th class="pb-2 font-semibold">Konten</th>
+        <th class="pb-2 font-semibold">Likes</th>
+        <th class="pb-2 font-semibold">Waktu</th>
+        <th class="pb-2 font-semibold">Aksi</th>
+      </tr></thead><tbody>${posts.map(p => `<tr class="border-b border-gray-50 hover:bg-gray-50">
+        <td class="py-2 font-medium">${escHtml(p.authorName)}</td>
+        <td class="py-2 text-on-surface-muted max-w-[200px] truncate">${escHtml(p.content)}</td>
+        <td class="py-2">${p.likes||0}</td>
+        <td class="py-2 text-on-surface-muted">${timeAgo(p.createdAt)}</td>
+        <td class="py-2"><button onclick="deletePost('${p.id}')" class="text-red-500 hover:underline text-xs">Hapus</button></td>
+      </tr>`).join('')}</tbody></table>`;
+  } catch(e) { showToast('Gagal memuat admin', 'error'); }
+}
+
+// ======= REGISTER MODAL =======
+function showRegisterModal() { document.getElementById('register-modal').classList.remove('hidden'); }
+function closeRegisterModal() {
+  document.getElementById('register-modal').classList.add('hidden');
+  document.getElementById('register-error').classList.add('hidden');
+}
+
+// ======= STARTUP =======
+window.onload = function() {
+  const saved = localStorage.getItem('pesaner_user');
+  if (saved) {
+    currentUser = JSON.parse(saved);
+    initApp();
+  }
+  // Enter key on login
+  document.getElementById('login-password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleLogin();
+  });
+};
+</script>
+</body>
+</html>

@@ -65,6 +65,11 @@
   input[type="text"]:focus, input[type="password"]:focus { border-color: #0077CC; }
   select { outline: none; border: 1.5px solid #E5E7EB; border-radius: 10px; padding: 10px 14px; font-size: 13px; width: 100%; transition: border 0.15s; background: #fff; color: #1A1D23; }
   select:focus { border-color: #0077CC; }
+  #wa-post-dropdown { position: absolute; left: 0; right: 0; top: calc(100% + 4px); background: #fff; border: 1.5px solid #E5E7EB; border-radius: 10px; max-height: 220px; overflow-y: auto; box-shadow: 0 8px 20px rgba(0,0,0,0.1); z-index: 20; }
+  .wa-post-option { padding: 9px 12px; font-size: 13px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid #F3F4F6; }
+  .wa-post-option:last-child { border-bottom: none; }
+  .wa-post-option:hover { background: #F3F4F6; }
+  .wa-post-hint { padding: 8px 12px; font-size: 11px; color: #9CA3AF; border-top: 1px solid #F3F4F6; }
   .toast { position: fixed; bottom: 24px; right: 24px; background: #1A1D23; color: #fff; padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 500; z-index: 999; box-shadow: 0 4px 20px rgba(0,0,0,0.2); animation: slideUp 0.3s ease; }
   @keyframes slideUp { from { opacity:0; transform: translateY(16px); } to { opacity:1; transform: translateY(0); } }
   #app-login { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #EFF6FF 0%, #F0FDF4 100%); padding: 16px; }
@@ -147,12 +152,12 @@
       </div>
       <div class="hidden md:flex items-center gap-6 text-sm font-semibold text-on-surface-muted">
         <button onclick="switchTab('feed')" class="hover:text-primary transition-colors">Feed</button>
-        <button onclick="switchTab('profile')" class="hover:text-primary transition-colors">Profil</button>
+        <button onclick="goToOwnProfile()" class="hover:text-primary transition-colors">Profil</button>
         <button onclick="switchTab('admin')" id="nav-admin" class="hidden hover:text-primary transition-colors">Admin</button>
       </div>
       <div class="flex items-center gap-2">
         <button onclick="openPostModal()" class="btn-primary text-sm py-2 px-4 hidden md:block">+ Post</button>
-        <img id="header-avatar" src="https://ui-avatars.com/api/?name=U&background=0077CC&color=fff&size=64" class="avatar w-8 h-8 cursor-pointer" onclick="switchTab('profile')"/>
+        <img id="header-avatar" src="https://ui-avatars.com/api/?name=U&background=0077CC&color=fff&size=64" class="avatar w-8 h-8 cursor-pointer" onclick="goToOwnProfile()"/>
       </div>
     </div>
   </header>
@@ -166,7 +171,7 @@
       <div class="nav-link active" id="nav-feed-side" onclick="switchTab('feed')">
         <span class="material-symbols-outlined text-lg">home</span> Feed
       </div>
-      <div class="nav-link" id="nav-profile-side" onclick="switchTab('profile')">
+      <div class="nav-link" id="nav-profile-side" onclick="goToOwnProfile()">
         <span class="material-symbols-outlined text-lg">person</span> Profil
       </div>
       <div class="nav-link" id="nav-admin-side" onclick="switchTab('admin')" style="display:none">
@@ -224,7 +229,7 @@
             <img id="profile-avatar" src="" class="avatar w-24 h-24 border-4 border-white shadow"/>
           </div>
           <div class="flex justify-end pt-3 pb-2">
-            <button onclick="openEditProfileModal()" class="btn-outline text-sm">Edit Profil</button>
+            <button id="btn-edit-profile" onclick="openEditProfileModal()" class="btn-outline text-sm">Edit Profil</button>
           </div>
           <div class="mt-6">
             <h1 id="profile-name" class="text-2xl font-black text-on-surface"></h1>
@@ -291,7 +296,7 @@
       <span style="font-size:22px">📱</span>
       <span class="text-[10px] font-semibold" style="color:#25D366">Status</span>
     </button>
-    <button onclick="switchTab('profile')" class="flex flex-col items-center gap-0.5 px-3 py-1" id="mnav-profile">
+    <button onclick="goToOwnProfile()" class="flex flex-col items-center gap-0.5 px-3 py-1" id="mnav-profile">
       <span class="material-symbols-outlined text-on-surface-muted">person</span>
       <span class="text-[10px] font-semibold text-on-surface-muted">Profil</span>
     </button>
@@ -347,9 +352,12 @@
         </div>
         <div>
           <label class="block text-xs font-semibold text-on-surface-muted mb-1">Ambil teks dari post kamu (opsional)</label>
-          <select id="wa-post-picker" onchange="applyPostToWaSub()">
-            <option value="">-- Pilih salah satu post kamu --</option>
-          </select>
+          <div class="relative">
+            <input type="text" id="wa-post-search" placeholder="Cari post kamu..." autocomplete="off"
+              oninput="filterWaPostPicker()" onfocus="filterWaPostPicker()"
+              onblur="setTimeout(hideWaPostDropdown,150)"/>
+            <div id="wa-post-dropdown" class="hidden"></div>
+          </div>
           <div id="wa-post-picker-empty" class="hidden text-xs text-on-surface-muted mt-1">Kamu belum punya post.</div>
           <label class="flex items-center gap-2 mt-2 text-xs font-medium text-on-surface-muted select-none" id="wa-showdate-wrap" style="cursor:not-allowed;opacity:0.5;">
             <input type="checkbox" id="wa-show-date" disabled onchange="renderWaCanvas()" style="width:14px;height:14px;"/>
@@ -542,7 +550,7 @@
 <script>
 // ======= CONFIG =======
 // Ganti URL ini dengan URL Web App Google Apps Script Anda setelah deploy
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw4W3Lo4yel4abitY3msgb_DieCR4hFcl7s85NHIemCqI55irtkGgjvQ9qZWVUqmcH9/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyohmBDHfhqdb7Vc8GXp49q0MXzL8eI0LJSZ9eogoRQmHCqGU95bAEBxpPSUx9MhY02/exec';
 
 // ======= STATE =======
 let currentUser = null;
@@ -707,6 +715,21 @@ function switchTab(tab) {
   if (tab === 'admin') loadAdmin();
 }
 
+// Profil siapa yang sedang dilihat. null = profil sendiri.
+let viewingProfileUsername = null;
+
+function goToOwnProfile() {
+  viewingProfileUsername = null;
+  switchTab('profile');
+}
+
+// Dipanggil saat klik nama/foto penulis post di feed atau profil
+function viewUserProfile(username) {
+  if (!username) return;
+  viewingProfileUsername = (username === currentUser.username) ? null : username;
+  switchTab('profile');
+}
+
 // ======= FEED =======
 const FEED_PAGE_SIZE = 10;
 let feedOffset = 0;
@@ -765,6 +788,37 @@ function renderPosts(posts, containerId) {
   container.innerHTML = posts.map(p => postCard(p)).join('');
 }
 
+// Tombol kontak (SMS/WA/Telegram/Email) yang tampil di setiap post,
+// hanya untuk kontak yang oleh penulis post diset PUBLIK di profilnya.
+function contactButtonsRow(p) {
+  const contacts = p.authorContacts || {};
+  const buttons = [];
+  if (contacts.sms) {
+    buttons.push(`<a href="sms:${escHtml(contacts.sms)}" class="action-btn" title="Kirim SMS ke ${escHtml(p.authorName)}" onclick="event.stopPropagation()">
+      <span class="material-symbols-outlined" style="font-size:18px">sms</span>
+    </a>`);
+  }
+  if (contacts.wa) {
+    const waNum = normalizePhoneForWa(contacts.wa);
+    buttons.push(`<a href="https://wa.me/${waNum}" target="_blank" rel="noopener noreferrer" class="action-btn" title="Chat WhatsApp ${escHtml(p.authorName)}" onclick="event.stopPropagation()">
+      ${contactIconSvg('wa', 16)}
+    </a>`);
+  }
+  if (contacts.telegram) {
+    const tgVal = String(contacts.telegram).trim();
+    const tgHref = tgVal.startsWith('@') ? `https://t.me/${tgVal.slice(1)}` : `https://t.me/+${tgVal.replace(/[^\d]/g,'')}`;
+    buttons.push(`<a href="${tgHref}" target="_blank" rel="noopener noreferrer" class="action-btn" title="Chat Telegram ${escHtml(p.authorName)}" onclick="event.stopPropagation()">
+      ${contactIconSvg('telegram', 16)}
+    </a>`);
+  }
+  if (contacts.email) {
+    buttons.push(`<a href="mailto:${escHtml(contacts.email)}" class="action-btn" title="Email ${escHtml(p.authorName)}" onclick="event.stopPropagation()">
+      <span class="material-symbols-outlined" style="font-size:18px">mail</span>
+    </a>`);
+  }
+  return buttons.join('');
+}
+
 function postCard(p) {
   const av = avatarUrl(p.authorName);
   const liked = p.likedBy && p.likedBy.includes(currentUser.username);
@@ -772,12 +826,12 @@ function postCard(p) {
   const isPrivate = p.privacy === 'private';
   return `<div class="post-card" id="post-${p.id}">
     <div class="flex gap-3">
-      <img src="${av}" class="avatar w-10 h-10 flex-shrink-0"/>
+      <img src="${av}" class="avatar w-10 h-10 flex-shrink-0" style="cursor:pointer" onclick="viewUserProfile('${p.authorUsername}')" title="Lihat profil ${escHtml(p.authorName)}"/>
       <div class="flex-1 min-w-0">
         <div class="flex items-center justify-between gap-2">
           <div>
-            <span class="font-bold text-sm">${escHtml(p.authorName)}</span>
-            <span class="text-on-surface-muted text-xs ml-1">@${escHtml(p.authorUsername)}</span>
+            <span class="font-bold text-sm hover:underline" style="cursor:pointer" onclick="viewUserProfile('${p.authorUsername}')" title="Lihat profil ${escHtml(p.authorName)}">${escHtml(p.authorName)}</span>
+            <span class="text-on-surface-muted text-xs ml-1" style="cursor:pointer" onclick="viewUserProfile('${p.authorUsername}')">@${escHtml(p.authorUsername)}</span>
             <span class="privacy-badge ml-1">
               <span class="material-symbols-outlined" style="font-size:13px">${isPrivate ? 'lock' : 'public'}</span>${isPrivate ? 'Privat' : 'Publik'}
             </span>
@@ -790,12 +844,12 @@ function postCard(p) {
           </button>` : ''}
         </div>
         <p class="text-sm mt-1 mb-3 leading-relaxed">${linkifyContent(p.content)}</p>
-        <div class="flex gap-1 items-center flex-wrap">
+        <div class="flex gap-1 items-center">
           <button onclick="toggleLike('${p.id}')" class="action-btn ${liked?'liked':''}">
             <span class="material-symbols-outlined ${liked?'fill-icon':''}" style="font-size:18px">favorite</span>
             <span id="like-count-${p.id}">${p.likes||0}</span>
           </button>
-          ${contactButtonsHtml(p.authorContacts)}
+          ${contactButtonsRow(p)}
         </div>
       </div>
     </div>
@@ -904,6 +958,25 @@ async function deletePost(postId) {
 }
 
 // ======= KONTAK (SMS/WA/Telegram/Email) =======
+// Ikon asli WhatsApp & Telegram (SVG resmi, bukan ikon generik)
+function contactIconSvg(type, size) {
+  size = size || 16;
+  if (type === 'wa') {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`;
+  }
+  if (type === 'telegram') {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="#26A5E4"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>`;
+  }
+  return '';
+}
+
+// Normalisasi nomor telepon Indonesia untuk dipakai di link wa.me (08xx -> 62xx)
+function normalizePhoneForWa(value) {
+  let digits = String(value || '').replace(/[^\d]/g, '');
+  if (digits.startsWith('0')) digits = '62' + digits.slice(1);
+  return digits;
+}
+
 const CONTACT_FIELDS = ['sms', 'wa', 'telegram', 'email'];
 const CONTACT_META = {
   sms: { label: 'SMS', icon: 'sms' },
@@ -911,57 +984,7 @@ const CONTACT_META = {
   telegram: { label: 'Telegram', icon: 'send' },
   email: { label: 'Email', icon: 'mail' }
 };
-
-// Logo asli WhatsApp & Telegram (SVG resmi, disederhanakan) dipakai menggantikan
-// ikon Material generik di halaman profil maupun tombol kontak pada tiap post.
-const CONTACT_SVG_ICONS = {
-  wa: `<svg viewBox="0 0 32 32" width="1em" height="1em" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M16.001 2.667c-7.363 0-13.334 5.97-13.334 13.333 0 2.353.615 4.66 1.784 6.686L2.667 29.333l6.81-1.786a13.27 13.27 0 0 0 6.523 1.72h.006c7.362 0 13.333-5.97 13.333-13.333 0-3.562-1.387-6.912-3.905-9.43a13.246 13.246 0 0 0-9.433-3.837zm0 24.4h-.005a11.06 11.06 0 0 1-5.638-1.544l-.404-.24-4.04 1.06 1.078-3.938-.263-.404a11.02 11.02 0 0 1-1.69-5.874c0-6.104 4.966-11.07 11.067-11.07a11 11 0 0 1 7.827 3.244 10.996 10.996 0 0 1 3.24 7.83c-.003 6.104-4.968 11.07-11.072 11.07zm6.07-8.29c-.332-.166-1.965-.97-2.27-1.08-.305-.11-.527-.166-.75.167-.222.332-.86 1.08-1.055 1.302-.194.222-.388.25-.72.083-.332-.167-1.402-.517-2.67-1.65-.987-.88-1.653-1.967-1.847-2.3-.194-.332-.02-.512.146-.678.15-.15.332-.388.498-.583.166-.194.222-.332.332-.554.11-.222.055-.416-.028-.583-.083-.166-.75-1.81-1.028-2.48-.27-.65-.545-.562-.75-.573l-.638-.011a1.226 1.226 0 0 0-.888.416c-.305.332-1.163 1.137-1.163 2.773 0 1.637 1.19 3.218 1.356 3.44.166.222 2.343 3.578 5.678 5.016.793.343 1.412.548 1.895.7.796.253 1.52.217 2.093.132.639-.095 1.965-.803 2.242-1.58.277-.777.277-1.442.194-1.58-.083-.14-.305-.222-.638-.388z"/></svg>`,
-  telegram: `<svg viewBox="0 0 32 32" width="1em" height="1em" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.667C8.636 2.667 2.667 8.636 2.667 16S8.636 29.333 16 29.333 29.333 23.364 29.333 16 23.364 2.667 16 2.667zm6.62 9.02-2.24 10.566c-.169.75-.61.936-1.235.583l-3.412-2.515-1.646 1.585c-.182.182-.335.335-.686.335l.245-3.478 6.33-5.72c.276-.245-.06-.382-.428-.137l-7.822 4.926-3.37-1.053c-.732-.229-.746-.732.153-1.084l13.176-5.078c.61-.222 1.143.137.935 1.07z"/></svg>`
-};
 let contactPrivacyState = { sms: 'public', wa: 'public', telegram: 'public', email: 'public' };
-
-// Bangun tautan aksi (sms:, wa.me, t.me, mailto:) dari nilai kontak mentah
-function contactHref(field, rawValue) {
-  const value = String(rawValue || '').trim();
-  if (!value) return '#';
-  if (field === 'sms') {
-    return 'sms:' + value.replace(/[^\d+]/g, '');
-  }
-  if (field === 'wa') {
-    let digits = value.replace(/[^\d]/g, '');
-    if (digits.startsWith('0')) digits = '62' + digits.slice(1); // asumsi nomor Indonesia
-    return 'https://wa.me/' + digits;
-  }
-  if (field === 'telegram') {
-    if (value.startsWith('@')) return 'https://t.me/' + value.slice(1);
-    if (/^\d/.test(value.replace(/[^\d]/g,'')) && !/^https?:/i.test(value)) {
-      let digits = value.replace(/[^\d]/g, '');
-      return 'https://t.me/+' + digits;
-    }
-    return /^https?:\/\//i.test(value) ? value : 'https://t.me/' + value;
-  }
-  if (field === 'email') {
-    return 'mailto:' + value;
-  }
-  return '#';
-}
-
-// Render tombol-tombol kontak (SMS/WhatsApp/Telegram/Email) di bawah setiap post.
-// Hanya kontak yang diatur "publik" oleh pemilik akun di halaman profil yang tampil;
-// kontak "privat" tidak pernah dikirim/ditampilkan di sini.
-function contactButtonsHtml(authorContacts) {
-  if (!authorContacts) return '';
-  return CONTACT_FIELDS.filter(f => authorContacts[f] && authorContacts[f].value).map(f => {
-    const meta = CONTACT_META[f];
-    const href = contactHref(f, authorContacts[f].value);
-    const iconHtml = CONTACT_SVG_ICONS[f]
-      ? `<span style="font-size:16px;line-height:0">${CONTACT_SVG_ICONS[f]}</span>`
-      : `<span class="material-symbols-outlined" style="font-size:16px">${meta.icon}</span>`;
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="action-btn" title="${meta.label}" onclick="event.stopPropagation()">
-      ${iconHtml}
-    </a>`;
-  }).join('');
-}
 
 function defaultContacts() {
   const c = {};
@@ -991,8 +1014,8 @@ function renderProfileContacts(contacts) {
     const meta = CONTACT_META[f];
     const c = contacts[f];
     const isPrivate = c.privacy === 'private';
-    const iconHtml = CONTACT_SVG_ICONS[f]
-      ? `<span class="text-primary" style="font-size:18px;line-height:0">${CONTACT_SVG_ICONS[f]}</span>`
+    const iconHtml = (f === 'wa' || f === 'telegram')
+      ? `<span class="inline-flex items-center justify-center" style="width:18px;height:18px;">${contactIconSvg(f, 16)}</span>`
       : `<span class="material-symbols-outlined text-primary" style="font-size:18px">${meta.icon}</span>`;
     return `<div class="flex items-center gap-2 text-sm text-on-surface">
       ${iconHtml}
@@ -1007,15 +1030,40 @@ function renderProfileContacts(contacts) {
 
 // ======= PROFILE =======
 async function loadProfile() {
-  document.getElementById('profile-name').textContent = currentUser.name || '';
-  document.getElementById('profile-username-display').textContent = '@' + (currentUser.username || '');
-  document.getElementById('profile-bio').textContent = currentUser.bio || '';
-  document.getElementById('profile-avatar').src = avatarUrl(currentUser.name);
-  renderProfileContacts(getCurrentContacts());
+  const targetUsername = viewingProfileUsername || currentUser.username;
+  const isOwn = targetUsername === currentUser.username;
+
+  document.getElementById('btn-edit-profile').classList.toggle('hidden', !isOwn);
+
+  if (isOwn) {
+    document.getElementById('profile-name').textContent = currentUser.name || '';
+    document.getElementById('profile-username-display').textContent = '@' + (currentUser.username || '');
+    document.getElementById('profile-bio').textContent = currentUser.bio || '';
+    document.getElementById('profile-avatar').src = avatarUrl(currentUser.name);
+    renderProfileContacts(getCurrentContacts());
+  } else {
+    document.getElementById('profile-name').textContent = '';
+    document.getElementById('profile-bio').textContent = '';
+    document.getElementById('profile-contacts').innerHTML = '';
+    try {
+      const res = await apiCall('getUserProfile', { username: targetUsername, viewerUsername: currentUser.username });
+      if (res.success) {
+        const p = res.profile;
+        document.getElementById('profile-name').textContent = p.name || '';
+        document.getElementById('profile-username-display').textContent = '@' + (p.username || '');
+        document.getElementById('profile-bio').textContent = p.bio || '';
+        document.getElementById('profile-avatar').src = avatarUrl(p.name);
+        renderProfileContacts(p.contacts);
+      } else {
+        showToast(res.message || 'User tidak ditemukan', 'error');
+      }
+    } catch(e) { showToast('Gagal memuat profil', 'error'); }
+  }
 
   document.getElementById('profile-posts-loading').classList.remove('hidden');
+  document.getElementById('profile-posts-container').innerHTML = '';
   try {
-    const res = await apiCall('getUserPosts', { username: currentUser.username });
+    const res = await apiCall('getUserPosts', { username: targetUsername, viewerUsername: currentUser.username });
     const posts = res.posts || [];
     document.getElementById('profile-posts-count').textContent = posts.length;
     renderPosts(posts, 'profile-posts-container');
@@ -1225,52 +1273,81 @@ function waGoStep2() {
   loadUserPostsForWa();
 }
 
-// ======= AMBIL TEKS DARI POST SENDIRI =======
+// ======= AMBIL TEKS DARI POST SENDIRI (dengan pencarian) =======
 let waUserPosts = [];
+const WA_POST_SEARCH_LIMIT = 20; // batasi jumlah hasil yang dirender sekaligus
+
 async function loadUserPostsForWa() {
-  const picker = document.getElementById('wa-post-picker');
+  const searchInput = document.getElementById('wa-post-search');
   const emptyMsg = document.getElementById('wa-post-picker-empty');
-  picker.innerHTML = '<option value="">Memuat post kamu...</option>';
-  picker.disabled = true;
+  waUserPosts = [];
+  searchInput.value = '';
+  searchInput.placeholder = 'Memuat post kamu...';
+  searchInput.disabled = true;
+  hideWaPostDropdown();
   try {
     const res = await apiCall('getUserPosts', { username: currentUser.username });
     waUserPosts = res.posts || [];
-    picker.innerHTML = '<option value="">-- Pilih salah satu post kamu --</option>' +
-      waUserPosts.map((p, i) => {
-        const preview = p.content.length > 45 ? p.content.slice(0, 45) + '…' : p.content;
-        return `<option value="${i}">${escHtml(preview)}</option>`;
-      }).join('');
     emptyMsg.classList.toggle('hidden', waUserPosts.length > 0);
   } catch (e) {
-    picker.innerHTML = '<option value="">-- Pilih salah satu post kamu --</option>';
     showToast('Gagal memuat post kamu', 'error');
   }
-  picker.disabled = false;
+  searchInput.placeholder = 'Cari post kamu...';
+  searchInput.disabled = false;
+}
+
+// Filter daftar post sesuai kata kunci, hanya render maksimal WA_POST_SEARCH_LIMIT
+// item sekaligus supaya tetap ringan walau post-nya sangat banyak.
+function filterWaPostPicker() {
+  const dropdown = document.getElementById('wa-post-dropdown');
+  if (!waUserPosts.length) { dropdown.classList.add('hidden'); return; }
+
+  const query = document.getElementById('wa-post-search').value.trim().toLowerCase();
+  const matches = query
+    ? waUserPosts.filter(p => p.content.toLowerCase().includes(query))
+    : waUserPosts;
+  const shown = matches.slice(0, WA_POST_SEARCH_LIMIT);
+
+  if (!shown.length) {
+    dropdown.innerHTML = `<div class="wa-post-option" style="cursor:default;">Tidak ada post yang cocok</div>`;
+  } else {
+    dropdown.innerHTML = shown.map(p => {
+      const idx = waUserPosts.indexOf(p);
+      const preview = p.content.length > 70 ? p.content.slice(0, 70) + '…' : p.content;
+      return `<div class="wa-post-option" onmousedown="selectWaPost(${idx})">${escHtml(preview)}</div>`;
+    }).join('') + (matches.length > WA_POST_SEARCH_LIMIT
+      ? `<div class="wa-post-hint">Menampilkan ${WA_POST_SEARCH_LIMIT} dari ${matches.length} hasil — ketik kata kunci lebih spesifik untuk mempersempit.</div>`
+      : '');
+  }
+  dropdown.classList.remove('hidden');
+}
+
+function hideWaPostDropdown() {
+  const dropdown = document.getElementById('wa-post-dropdown');
+  if (dropdown) dropdown.classList.add('hidden');
 }
 
 let waSelectedPostDate = null;
-function applyPostToWaSub() {
-  const idx = document.getElementById('wa-post-picker').value;
+
+function selectWaPost(idx) {
+  const post = waUserPosts[idx];
+  if (!post) return;
+  const searchInput = document.getElementById('wa-post-search');
+  const preview = post.content.length > 70 ? post.content.slice(0, 70) + '…' : post.content;
+  searchInput.value = preview;
+
   const showDateWrap = document.getElementById('wa-showdate-wrap');
   const showDateChk = document.getElementById('wa-show-date');
-  if (idx === '') {
-    waSelectedPostDate = null;
-    showDateChk.checked = false;
-    showDateChk.disabled = true;
-    showDateWrap.style.opacity = '0.5';
-    showDateWrap.style.cursor = 'not-allowed';
-    renderWaCanvas();
-    return;
-  }
-  const post = waUserPosts[parseInt(idx, 10)];
-  if (!post) return;
   const subInput = document.getElementById('wa-text-sub');
   const maxLen = parseInt(subInput.getAttribute('maxlength'), 10) || 150;
   subInput.value = post.content.length > maxLen ? post.content.slice(0, maxLen) : post.content;
+
   waSelectedPostDate = post.createdAt || null;
   showDateChk.disabled = !waSelectedPostDate;
   showDateWrap.style.opacity = waSelectedPostDate ? '1' : '0.5';
   showDateWrap.style.cursor = waSelectedPostDate ? 'pointer' : 'not-allowed';
+
+  hideWaPostDropdown();
   renderWaCanvas();
 }
 

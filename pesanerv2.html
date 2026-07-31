@@ -253,6 +253,7 @@
           </div>
           <div class="flex justify-end pt-3 pb-2">
             <button id="btn-edit-profile" onclick="openEditProfileModal()" class="btn-outline text-sm">Edit Profil</button>
+            <button id="btn-follow-user" onclick="toggleFollowUser()" class="btn-primary text-sm hidden">Follow</button>
           </div>
           <div class="mt-6">
             <h1 id="profile-name" class="text-2xl font-black text-on-surface"></h1>
@@ -263,6 +264,14 @@
               <div class="flex gap-1 items-baseline">
                 <span id="profile-posts-count" class="font-bold text-sm text-on-surface">0</span>
                 <span class="text-xs text-on-surface-muted">Posts</span>
+              </div>
+              <div class="flex gap-1 items-baseline">
+                <span id="profile-following-count" class="font-bold text-sm text-on-surface">0</span>
+                <span class="text-xs text-on-surface-muted">Mengikuti</span>
+              </div>
+              <div class="flex gap-1 items-baseline">
+                <span id="profile-followers-count" class="font-bold text-sm text-on-surface">0</span>
+                <span class="text-xs text-on-surface-muted">Pengikut</span>
               </div>
             </div>
           </div>
@@ -349,22 +358,10 @@
       <span class="material-symbols-outlined text-on-surface-muted">home</span>
       <span class="text-[10px] font-semibold text-on-surface-muted">Feed</span>
     </button>
-    <button onclick="openPostModal()" class="flex flex-col items-center gap-0.5 px-3 py-1">
-      <span class="material-symbols-outlined text-primary">add_circle</span>
-      <span class="text-[10px] font-semibold text-primary">Post</span>
-    </button>
-    <button onclick="openWaStatusModal()" class="flex flex-col items-center gap-0.5 px-3 py-1">
-      <span style="font-size:22px">📱</span>
-      <span class="text-[10px] font-semibold" style="color:#25D366">Status</span>
-    </button>
     <button onclick="switchTab('chat')" class="flex flex-col items-center gap-0.5 px-3 py-1" id="mnav-chat" style="position:relative;">
       <span class="material-symbols-outlined text-on-surface-muted">chat</span>
       <span id="chat-badge-mobile" class="hidden" style="position:absolute; top:-2px; right:6px; background:#EF4444; color:#fff; font-size:9px; font-weight:700; min-width:14px; height:14px; border-radius:999px; display:flex; align-items:center; justify-content:center; padding:0 3px;">0</span>
       <span class="text-[10px] font-semibold text-on-surface-muted">Chat</span>
-    </button>
-    <button onclick="goToOwnProfile()" class="flex flex-col items-center gap-0.5 px-3 py-1" id="mnav-profile">
-      <span class="material-symbols-outlined text-on-surface-muted">person</span>
-      <span class="text-[10px] font-semibold text-on-surface-muted">Profil</span>
     </button>
     <button onclick="handleLogout()" class="flex flex-col items-center gap-0.5 px-3 py-1">
       <span class="material-symbols-outlined text-red-500">logout</span>
@@ -880,29 +877,39 @@ function renderPosts(posts, containerId) {
 
 // Tombol kontak (SMS/WA/Telegram/Email) yang tampil di setiap post,
 // hanya untuk kontak yang oleh penulis post diset PUBLIK di profilnya.
+// Buat template pesan otomatis berisi kutipan isi post, dipakai untuk
+// mengisi otomatis SMS/WhatsApp/Telegram/Email saat tombol kontak diklik.
+function buildContactMessageTemplate(post) {
+  return `Halo aku ${currentUser.username} dalam Pesaner, ingin menyampaikan pesan terkait post kamu yang tertera sebagai berikut: "${post.content}". Menurutku ...`;
+}
+
 function contactButtonsRow(p) {
   const contacts = p.authorContacts || {};
   const buttons = [];
+  const msgText = buildContactMessageTemplate(p);
+  const encodedMsg = encodeURIComponent(msgText);
+
   if (contacts.sms) {
-    buttons.push(`<a href="sms:${escHtml(contacts.sms)}" class="action-btn" title="Kirim SMS ke ${escHtml(p.authorName)}" onclick="event.stopPropagation()">
+    buttons.push(`<a href="sms:${escHtml(contacts.sms)}?body=${encodedMsg}" class="action-btn" title="Kirim SMS ke ${escHtml(p.authorName)}" onclick="event.stopPropagation()">
       <span class="material-symbols-outlined" style="font-size:18px">sms</span>
     </a>`);
   }
   if (contacts.wa) {
     const waNum = normalizePhoneForWa(contacts.wa);
-    buttons.push(`<a href="https://wa.me/${waNum}" target="_blank" rel="noopener noreferrer" class="action-btn" title="Chat WhatsApp ${escHtml(p.authorName)}" onclick="event.stopPropagation()">
+    buttons.push(`<a href="https://wa.me/${waNum}?text=${encodedMsg}" target="_blank" rel="noopener noreferrer" class="action-btn" title="Chat WhatsApp ${escHtml(p.authorName)}" onclick="event.stopPropagation()">
       ${contactIconSvg('wa', 16)}
     </a>`);
   }
   if (contacts.telegram) {
     const tgVal = String(contacts.telegram).trim();
     const tgHref = tgVal.startsWith('@') ? `https://t.me/${tgVal.slice(1)}` : `https://t.me/+${tgVal.replace(/[^\d]/g,'')}`;
-    buttons.push(`<a href="${tgHref}" target="_blank" rel="noopener noreferrer" class="action-btn" title="Chat Telegram ${escHtml(p.authorName)}" onclick="event.stopPropagation()">
+    buttons.push(`<a href="${tgHref}?text=${encodedMsg}" target="_blank" rel="noopener noreferrer" class="action-btn" title="Chat Telegram ${escHtml(p.authorName)}" onclick="event.stopPropagation()">
       ${contactIconSvg('telegram', 16)}
     </a>`);
   }
   if (contacts.email) {
-    buttons.push(`<a href="mailto:${escHtml(contacts.email)}" class="action-btn" title="Email ${escHtml(p.authorName)}" onclick="event.stopPropagation()">
+    const subject = encodeURIComponent('Pesan terkait post kamu di Pesaner');
+    buttons.push(`<a href="mailto:${escHtml(contacts.email)}?subject=${subject}&body=${encodedMsg}" class="action-btn" title="Email ${escHtml(p.authorName)}" onclick="event.stopPropagation()">
       <span class="material-symbols-outlined" style="font-size:18px">mail</span>
     </a>`);
   }
@@ -1460,11 +1467,14 @@ function renderProfileContacts(contacts) {
 }
 
 // ======= PROFILE =======
+let profileFollowState = { targetUsername: null, following: false };
+
 async function loadProfile() {
   const targetUsername = viewingProfileUsername || currentUser.username;
   const isOwn = targetUsername === currentUser.username;
 
   document.getElementById('btn-edit-profile').classList.toggle('hidden', !isOwn);
+  document.getElementById('btn-follow-user').classList.toggle('hidden', isOwn);
 
   if (isOwn) {
     document.getElementById('profile-name').textContent = currentUser.name || '';
@@ -1476,20 +1486,28 @@ async function loadProfile() {
     document.getElementById('profile-name').textContent = '';
     document.getElementById('profile-bio').textContent = '';
     document.getElementById('profile-contacts').innerHTML = '';
-    try {
-      const res = await apiCall('getUserProfile', { username: targetUsername, viewerUsername: currentUser.username });
-      if (res.success) {
-        const p = res.profile;
+  }
+
+  // Ambil data profil (nama/bio/kontak untuk orang lain, + info follow untuk siapa saja)
+  try {
+    const res = await apiCall('getUserProfile', { username: targetUsername, viewerUsername: currentUser.username });
+    if (res.success) {
+      const p = res.profile;
+      if (!isOwn) {
         document.getElementById('profile-name').textContent = p.name || '';
         document.getElementById('profile-username-display').textContent = '@' + (p.username || '');
         document.getElementById('profile-bio').textContent = p.bio || '';
         document.getElementById('profile-avatar').src = avatarUrl(p.name);
         renderProfileContacts(p.contacts);
-      } else {
-        showToast(res.message || 'User tidak ditemukan', 'error');
       }
-    } catch(e) { showToast('Gagal memuat profil', 'error'); }
-  }
+      document.getElementById('profile-followers-count').textContent = p.followersCount || 0;
+      document.getElementById('profile-following-count').textContent = p.followingCount || 0;
+      profileFollowState = { targetUsername, following: !!p.isFollowingByViewer };
+      updateFollowButtonUi();
+    } else if (!isOwn) {
+      showToast(res.message || 'User tidak ditemukan', 'error');
+    }
+  } catch(e) { showToast('Gagal memuat profil', 'error'); }
 
   document.getElementById('profile-posts-loading').classList.remove('hidden');
   document.getElementById('profile-posts-container').innerHTML = '';
@@ -1501,6 +1519,39 @@ async function loadProfile() {
     document.getElementById('profile-posts-empty').classList.toggle('hidden', posts.length > 0);
   } catch(e) { showToast('Gagal memuat profil', 'error'); }
   document.getElementById('profile-posts-loading').classList.add('hidden');
+}
+
+// ======= FOLLOW =======
+function updateFollowButtonUi() {
+  const btn = document.getElementById('btn-follow-user');
+  if (profileFollowState.following) {
+    btn.textContent = 'Mengikuti';
+    btn.classList.remove('btn-primary');
+    btn.classList.add('btn-outline');
+  } else {
+    btn.textContent = 'Follow';
+    btn.classList.remove('btn-outline');
+    btn.classList.add('btn-primary');
+  }
+}
+
+async function toggleFollowUser() {
+  const target = profileFollowState.targetUsername;
+  if (!target) return;
+  const btn = document.getElementById('btn-follow-user');
+  btn.disabled = true;
+  try {
+    const res = await apiCall('toggleFollow', { followerUsername: currentUser.username, followingUsername: target });
+    if (res.success) {
+      profileFollowState.following = res.following;
+      document.getElementById('profile-followers-count').textContent = res.followersCount || 0;
+      updateFollowButtonUi();
+      showToast(res.following ? 'Mengikuti user ini' : 'Berhenti mengikuti');
+    } else {
+      showToast(res.message || 'Gagal', 'error');
+    }
+  } catch(e) { showToast('Gagal', 'error'); }
+  btn.disabled = false;
 }
 
 function switchProfileTab(t) {

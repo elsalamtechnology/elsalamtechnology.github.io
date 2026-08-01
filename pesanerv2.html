@@ -89,6 +89,11 @@
   .chat-bubble-time.them { color: #9CA3AF; }
   .chat-status-read { color: #34B7F1; font-weight: 700; }
   .chat-status-retry { color: #EF4444; cursor: pointer; font-weight: 600; }
+
+  /* ===== JURNAL ===== */
+  .journal-mood-btn { width: 34px; height: 34px; border-radius: 999px; border: 1.5px solid transparent; background: transparent; font-size: 19px; cursor: pointer; transition: all 0.15s; display:flex; align-items:center; justify-content:center; }
+  .journal-mood-btn:hover { background: #F3F4F6; }
+  .journal-mood-btn.active { background: #E6F2FB; border-color: #0077CC; }
   .toast { position: fixed; bottom: 24px; right: 24px; background: #1A1D23; color: #fff; padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 500; z-index: 999; box-shadow: 0 4px 20px rgba(0,0,0,0.2); animation: slideUp 0.3s ease; }
   @keyframes slideUp { from { opacity:0; transform: translateY(16px); } to { opacity:1; transform: translateY(0); } }
   #app-login { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #EFF6FF 0%, #F0FDF4 100%); padding: 16px; }
@@ -193,6 +198,9 @@
       <div class="nav-link" id="nav-chat-side" onclick="switchTab('chat')" style="position:relative;">
         <span class="material-symbols-outlined text-lg">chat</span> Chat
         <span id="chat-badge-side" class="hidden" style="position:absolute; right:10px; top:8px; background:#EF4444; color:#fff; font-size:10px; font-weight:700; min-width:16px; height:16px; border-radius:999px; display:flex; align-items:center; justify-content:center; padding:0 4px;">0</span>
+      </div>
+      <div class="nav-link" id="nav-journal-side" onclick="switchTab('journal')">
+        <span class="material-symbols-outlined text-lg">edit_note</span> Jurnal
       </div>
       <div class="nav-link" id="nav-profile-side" onclick="goToOwnProfile()">
         <span class="material-symbols-outlined text-lg">person</span> Profil
@@ -327,6 +335,32 @@
       </div>
 
       <!-- ===== ADMIN TAB ===== -->
+
+      <!-- ===== JURNAL TAB ===== -->
+      <div id="tab-journal" class="hidden max-w-[600px] mx-auto px-3 py-6">
+        <h2 class="text-xl font-black text-on-surface mb-4">Jurnal Harian</h2>
+
+        <div class="post-card mb-5">
+          <textarea id="journal-content" rows="4" placeholder="Tulis catatan harianmu... apa yang kamu rasakan atau alami hari ini?"></textarea>
+          <div class="flex justify-between items-center mt-2">
+            <div class="flex gap-1" id="journal-mood-picker"></div>
+            <button onclick="submitJournalEntry()" id="btn-save-journal-new" class="btn-primary text-sm py-2 px-5">Simpan</button>
+          </div>
+          <div id="journal-new-loading" class="hidden flex justify-center mt-2"><div class="spinner"></div></div>
+        </div>
+
+        <div id="journal-loading" class="flex justify-center py-8"><div class="spinner"></div></div>
+        <div id="journal-list" class="space-y-3"></div>
+        <div class="flex justify-center mt-2 mb-4">
+          <button onclick="loadMoreJournal()" id="btn-load-more-journal" class="btn-outline text-sm py-2 px-6 hidden">Muat 10 Catatan Lagi</button>
+        </div>
+        <div id="journal-empty" class="hidden text-center py-14 text-on-surface-muted">
+          <span class="material-symbols-outlined text-5xl mb-3 opacity-30">edit_note</span>
+          <p class="text-sm">Belum ada catatan. Mulai tulis hari ini!</p>
+        </div>
+      </div>
+
+      <!-- ===== ADMIN TAB (lanjutan) ===== -->
       <div id="tab-admin" class="hidden max-w-[800px] mx-auto px-4 py-6">
         <h2 class="text-xl font-black mb-4">Panel Admin</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -362,6 +396,10 @@
       <span class="material-symbols-outlined text-on-surface-muted">chat</span>
       <span id="chat-badge-mobile" class="hidden" style="position:absolute; top:-2px; right:6px; background:#EF4444; color:#fff; font-size:9px; font-weight:700; min-width:14px; height:14px; border-radius:999px; display:flex; align-items:center; justify-content:center; padding:0 3px;">0</span>
       <span class="text-[10px] font-semibold text-on-surface-muted">Chat</span>
+    </button>
+    <button onclick="switchTab('journal')" class="flex flex-col items-center gap-0.5 px-3 py-1" id="mnav-journal">
+      <span class="material-symbols-outlined text-on-surface-muted">edit_note</span>
+      <span class="text-[10px] font-semibold text-on-surface-muted">Jurnal</span>
     </button>
     <button onclick="handleLogout()" class="flex flex-col items-center gap-0.5 px-3 py-1">
       <span class="material-symbols-outlined text-red-500">logout</span>
@@ -593,6 +631,25 @@
   </div>
 </div>
 
+<!-- Edit Journal Modal -->
+<div id="edit-journal-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeEditJournalModal()">
+  <div class="modal">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-black text-lg">Edit Catatan</h3>
+      <button onclick="closeEditJournalModal()" class="text-on-surface-muted hover:text-on-surface p-1 rounded-full">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <textarea id="edit-journal-content" rows="5" placeholder="Tulis catatan..."></textarea>
+    <div class="flex gap-1 mt-2" id="edit-journal-mood-picker"></div>
+    <div class="flex justify-end gap-2 mt-4">
+      <button onclick="closeEditJournalModal()" class="btn-outline text-sm">Batal</button>
+      <button onclick="saveEditJournalEntry()" id="btn-save-journal-edit" class="btn-primary text-sm">Simpan</button>
+    </div>
+    <div id="edit-journal-loading" class="hidden flex justify-center mt-3"><div class="spinner"></div></div>
+  </div>
+</div>
+
 <!-- Register Modal -->
 <div id="register-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeRegisterModal()">
   <div class="modal">
@@ -785,7 +842,7 @@ function initApp() {
 
 // ======= TABS =======
 function switchTab(tab) {
-  ['feed','profile','admin','chat'].forEach(t => {
+  ['feed','profile','admin','chat','journal'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('hidden', t !== tab);
   });
   // Update sidebar active
@@ -800,6 +857,7 @@ function switchTab(tab) {
   if (tab === 'profile') loadProfile();
   if (tab === 'admin') loadAdmin();
   if (tab === 'chat') openChatList();
+  if (tab === 'journal') loadJournal();
 }
 
 // Profil siapa yang sedang dilihat. null = profil sendiri.
@@ -990,6 +1048,189 @@ function setPostPrivacy(value) {
   postPrivacy = value;
   document.getElementById('privacy-public').classList.toggle('active-toggle', value === 'public');
   document.getElementById('privacy-private').classList.toggle('active-toggle', value === 'private');
+}
+
+// ======= JURNAL HARIAN =======
+const JOURNAL_PAGE_SIZE = 10;
+const JOURNAL_MOODS = ['😊', '😐', '😢', '😡', '😴'];
+let journalEntries = [];
+let journalOffset = 0;
+let journalHasMore = false;
+let selectedJournalMood = '';
+let editJournalMood = '';
+let editingJournalId = null;
+
+function renderMoodPicker(containerId, selectedMood, handlerName) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = JOURNAL_MOODS.map(m =>
+    `<button type="button" onclick="${handlerName}('${m}')" class="journal-mood-btn ${selectedMood === m ? 'active' : ''}">${m}</button>`
+  ).join('');
+}
+
+function selectJournalMood(m) {
+  selectedJournalMood = (selectedJournalMood === m) ? '' : m;
+  renderMoodPicker('journal-mood-picker', selectedJournalMood, 'selectJournalMood');
+}
+
+function selectEditJournalMood(m) {
+  editJournalMood = (editJournalMood === m) ? '' : m;
+  renderMoodPicker('edit-journal-mood-picker', editJournalMood, 'selectEditJournalMood');
+}
+
+async function loadJournal() {
+  renderMoodPicker('journal-mood-picker', selectedJournalMood, 'selectJournalMood');
+  document.getElementById('journal-loading').classList.remove('hidden');
+  document.getElementById('journal-list').innerHTML = '';
+  document.getElementById('journal-empty').classList.add('hidden');
+  document.getElementById('btn-load-more-journal').classList.add('hidden');
+  journalEntries = [];
+  journalOffset = 0;
+  journalHasMore = false;
+  try {
+    const res = await apiCall('getJournalEntries', { username: currentUser.username, offset: 0, limit: JOURNAL_PAGE_SIZE });
+    journalEntries = res.entries || [];
+    journalOffset = journalEntries.length;
+    journalHasMore = !!res.hasMore;
+    renderJournalList();
+    document.getElementById('journal-empty').classList.toggle('hidden', journalEntries.length > 0);
+    document.getElementById('btn-load-more-journal').classList.toggle('hidden', !journalHasMore);
+  } catch (e) {
+    showToast('Gagal memuat jurnal', 'error');
+  }
+  document.getElementById('journal-loading').classList.add('hidden');
+}
+
+async function loadMoreJournal() {
+  const btn = document.getElementById('btn-load-more-journal');
+  btn.disabled = true;
+  btn.textContent = 'Memuat...';
+  try {
+    const res = await apiCall('getJournalEntries', { username: currentUser.username, offset: journalOffset, limit: JOURNAL_PAGE_SIZE });
+    const more = res.entries || [];
+    journalEntries = journalEntries.concat(more);
+    journalOffset += more.length;
+    journalHasMore = !!res.hasMore;
+    renderJournalList();
+    btn.classList.toggle('hidden', !journalHasMore);
+  } catch (e) {
+    showToast('Gagal memuat catatan berikutnya', 'error');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Muat 10 Catatan Lagi';
+}
+
+function journalCard(e) {
+  const edited = e.updatedAt && e.updatedAt !== e.createdAt;
+  return `<div class="post-card" id="journal-${e.id}">
+    <div class="flex justify-between items-start gap-2 mb-2">
+      <div class="flex items-center gap-2 flex-wrap">
+        ${e.mood ? `<span style="font-size:19px">${e.mood}</span>` : ''}
+        <span class="text-xs text-on-surface-muted font-semibold">${formatDateTime(e.createdAt)}</span>
+        ${edited ? '<span class="text-[10px] text-on-surface-muted italic">(diedit)</span>' : ''}
+      </div>
+      <div class="flex gap-1 flex-shrink-0">
+        <button onclick="openEditJournalModal('${e.id}')" class="p-1.5 rounded-full hover:bg-gray-100 text-on-surface-muted" title="Edit">
+          <span class="material-symbols-outlined" style="font-size:17px">edit</span>
+        </button>
+        <button onclick="deleteJournalEntryConfirm('${e.id}')" class="p-1.5 rounded-full hover:bg-gray-100 text-on-surface-muted hover:text-red-500" title="Hapus">
+          <span class="material-symbols-outlined" style="font-size:17px">delete</span>
+        </button>
+      </div>
+    </div>
+    <p class="text-sm text-on-surface leading-relaxed" style="white-space:pre-wrap;">${linkifyContent(e.content)}</p>
+  </div>`;
+}
+
+function renderJournalList() {
+  document.getElementById('journal-list').innerHTML = journalEntries.map(journalCard).join('');
+}
+
+async function submitJournalEntry() {
+  const textarea = document.getElementById('journal-content');
+  const content = textarea.value.trim();
+  if (!content) { showToast('Tulis sesuatu dulu!', 'error'); return; }
+  if (content.length > 5000) { showToast('Maksimal 5000 karakter', 'error'); return; }
+
+  document.getElementById('journal-new-loading').classList.remove('hidden');
+  document.getElementById('btn-save-journal-new').disabled = true;
+  try {
+    const res = await apiCall('createJournalEntry', { username: currentUser.username, content, mood: selectedJournalMood });
+    if (res.success) {
+      textarea.value = '';
+      selectedJournalMood = '';
+      renderMoodPicker('journal-mood-picker', selectedJournalMood, 'selectJournalMood');
+      showToast('Catatan tersimpan!');
+      loadJournal();
+    } else {
+      showToast(res.message || 'Gagal menyimpan', 'error');
+    }
+  } catch (e) {
+    showToast('Gagal menyimpan catatan', 'error');
+  }
+  document.getElementById('journal-new-loading').classList.add('hidden');
+  document.getElementById('btn-save-journal-new').disabled = false;
+}
+
+function openEditJournalModal(id) {
+  const entry = journalEntries.find(e => e.id === id);
+  if (!entry) return;
+  editingJournalId = id;
+  editJournalMood = entry.mood || '';
+  document.getElementById('edit-journal-content').value = entry.content;
+  renderMoodPicker('edit-journal-mood-picker', editJournalMood, 'selectEditJournalMood');
+  document.getElementById('edit-journal-modal').classList.remove('hidden');
+}
+
+function closeEditJournalModal() {
+  document.getElementById('edit-journal-modal').classList.add('hidden');
+  editingJournalId = null;
+}
+
+async function saveEditJournalEntry() {
+  const content = document.getElementById('edit-journal-content').value.trim();
+  if (!content) { showToast('Catatan tidak boleh kosong', 'error'); return; }
+  if (content.length > 5000) { showToast('Maksimal 5000 karakter', 'error'); return; }
+  if (!editingJournalId) return;
+
+  document.getElementById('edit-journal-loading').classList.remove('hidden');
+  document.getElementById('btn-save-journal-edit').disabled = true;
+  try {
+    const res = await apiCall('updateJournalEntry', { username: currentUser.username, entryId: editingJournalId, content, mood: editJournalMood });
+    if (res.success) {
+      const entry = journalEntries.find(e => e.id === editingJournalId);
+      if (entry) {
+        entry.content = content;
+        entry.mood = editJournalMood;
+        entry.updatedAt = res.updatedAt;
+      }
+      renderJournalList();
+      closeEditJournalModal();
+      showToast('Catatan diperbarui');
+    } else {
+      showToast(res.message || 'Gagal memperbarui', 'error');
+    }
+  } catch (e) {
+    showToast('Gagal memperbarui catatan', 'error');
+  }
+  document.getElementById('edit-journal-loading').classList.add('hidden');
+  document.getElementById('btn-save-journal-edit').disabled = false;
+}
+
+async function deleteJournalEntryConfirm(id) {
+  if (!confirm('Hapus catatan ini? Tindakan ini tidak bisa dibatalkan.')) return;
+  try {
+    const res = await apiCall('deleteJournalEntry', { username: currentUser.username, entryId: id });
+    if (res.success) {
+      journalEntries = journalEntries.filter(e => e.id !== id);
+      document.getElementById('journal-' + id)?.remove();
+      document.getElementById('journal-empty').classList.toggle('hidden', journalEntries.length > 0);
+      showToast('Catatan dihapus');
+    } else {
+      showToast(res.message || 'Gagal menghapus', 'error');
+    }
+  } catch (e) {
+    showToast('Gagal menghapus catatan', 'error');
+  }
 }
 
 // ======= CHAT =======

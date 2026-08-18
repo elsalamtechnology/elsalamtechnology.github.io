@@ -85,6 +85,7 @@
   .chat-bubble { display: inline-block; max-width: 100%; padding: 8px 13px; border-radius: 16px; font-size: 14px; line-height: 1.45; overflow-wrap: break-word; word-break: normal; white-space: pre-wrap; }
   .chat-bubble.me { background: #0077CC; color: #fff; border-bottom-right-radius: 4px; }
   .chat-bubble.them { background: #DCF8C6; color: #1A1D23; border-bottom-left-radius: 4px; }
+  .chat-bubble.media { padding: 6px; }
   .chat-bubble-time { font-size: 10px; margin-top: 3px; opacity: 0.8; display: flex; align-items: center; gap: 3px; }
   .chat-bubble-time.me { color: #6B7280; }
   .chat-bubble-time.them { color: #9CA3AF; }
@@ -216,6 +217,10 @@
       <div class="nav-link" id="nav-finance-side" onclick="switchTab('finance')">
         <span class="material-symbols-outlined text-lg">account_balance_wallet</span> <span data-i18n="nav_finance">Keuangan</span>
       </div>
+      <div class="nav-link" id="nav-p2p-side" onclick="switchTab('p2p')" style="position:relative;">
+        <span class="material-symbols-outlined text-lg">wifi_tethering</span> <span>Offline P2P</span>
+        <span id="p2p-badge-side" class="hidden" style="position:absolute; right:10px; top:8px; background:#F59E0B; color:#fff; font-size:10px; font-weight:700; min-width:16px; height:16px; border-radius:999px; display:flex; align-items:center; justify-content:center; padding:0 4px;">0</span>
+      </div>
       <div class="nav-link" id="nav-profile-side" onclick="goToOwnProfile()">
         <span class="material-symbols-outlined text-lg">person</span> <span data-i18n="nav_profile">Profil</span>
       </div>
@@ -275,6 +280,10 @@
           </div>
           <div class="flex justify-end pt-3 pb-2">
             <button id="btn-edit-profile" onclick="openEditProfileModal()" class="btn-outline text-sm" data-i18n="btn_edit_profile">Edit Profil</button>
+            <button id="btn-chat-user" onclick="openChatWithProfileUser()" class="btn-outline text-sm hidden">
+              <span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px;">chat</span>
+              <span data-i18n="btn_chat">Chat</span>
+            </button>
             <button id="btn-follow-user" onclick="toggleFollowUser()" class="btn-primary text-sm hidden" data-i18n="btn_follow">Follow</button>
           </div>
           <div class="mt-6">
@@ -341,10 +350,75 @@
           <div id="chat-messages-loading" class="flex justify-center py-6"><div class="spinner"></div></div>
           <button id="btn-load-more-chat" onclick="loadMoreChatMessages()" class="hidden btn-outline text-xs py-1.5 px-4 mx-auto block mb-3" data-i18n="btn_load_more_chat">Muat pesan sebelumnya</button>
           <div id="chat-messages" class="flex flex-col gap-2 pb-4" style="min-height:200px;"></div>
-          <div class="sticky bottom-0 bg-bg pt-2 pb-2 flex gap-2 items-end">
-            <textarea id="chat-input" rows="1" placeholder="Tulis pesan..." data-i18n-placeholder="chat_input_placeholder" style="resize:none; max-height:100px;" onkeydown="handleChatInputKeydown(event)"></textarea>
-            <button onclick="sendChatMessage()" id="btn-send-chat" class="btn-primary text-sm py-2.5 px-4 flex-shrink-0" data-i18n="btn_send">Kirim</button>
+
+          <!-- Upload progress bar (shown while uploading foto/video/dokumen/audio/voice note) -->
+          <div id="chat-upload-progress-wrap" class="hidden sticky bottom-[52px] bg-bg pb-1">
+            <div class="flex justify-between text-[10px] text-on-surface-muted mb-1">
+              <span id="chat-upload-progress-label">Mengunggah...</span>
+              <span id="chat-upload-progress-percent">0%</span>
+            </div>
+            <div style="height:6px;background:#E5E7EB;border-radius:999px;overflow:hidden;">
+              <div id="chat-upload-progress-bar" style="height:100%;width:0%;background:#0077CC;border-radius:999px;transition:width 0.2s;"></div>
+            </div>
           </div>
+
+          <!-- Attachment menu (hidden by default), same layout as the P2P attach menu -->
+          <div id="chat-attach-menu" class="hidden sticky bottom-[52px] bg-bg grid grid-cols-3 gap-2 px-1 pb-2 pt-2" style="border-top:1px solid #F3F4F6;">
+            <button onclick="chatAttach('image')" class="flex flex-col items-center gap-1 py-2 rounded-xl" style="background:#F9FAFB;">
+              <span class="material-symbols-outlined" style="color:#0077CC;">image</span>
+              <span class="text-[10px] font-semibold">Foto</span>
+            </button>
+            <button onclick="chatAttach('video')" class="flex flex-col items-center gap-1 py-2 rounded-xl" style="background:#F9FAFB;">
+              <span class="material-symbols-outlined" style="color:#7C3AED;">videocam</span>
+              <span class="text-[10px] font-semibold">Video</span>
+            </button>
+            <button onclick="chatAttach('document')" class="flex flex-col items-center gap-1 py-2 rounded-xl" style="background:#F9FAFB;">
+              <span class="material-symbols-outlined" style="color:#DC2626;">description</span>
+              <span class="text-[10px] font-semibold">Dokumen</span>
+            </button>
+            <button onclick="chatAttach('audio')" class="flex flex-col items-center gap-1 py-2 rounded-xl" style="background:#F9FAFB;">
+              <span class="material-symbols-outlined" style="color:#059669;">audiotrack</span>
+              <span class="text-[10px] font-semibold">Audio</span>
+            </button>
+            <button onclick="openChatContactShareModal()" class="flex flex-col items-center gap-1 py-2 rounded-xl" style="background:#F9FAFB;">
+              <span class="material-symbols-outlined" style="color:#EA580C;">person</span>
+              <span class="text-[10px] font-semibold">Kontak</span>
+            </button>
+          </div>
+
+          <!-- Hidden native file pickers, one per attachment kind -->
+          <input type="file" id="chat-file-image" accept="image/*" class="hidden" onchange="handleChatFileSelected(event,'image')"/>
+          <input type="file" id="chat-file-video" accept="video/*" class="hidden" onchange="handleChatFileSelected(event,'video')"/>
+          <input type="file" id="chat-file-document" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar" class="hidden" onchange="handleChatFileSelected(event,'document')"/>
+          <input type="file" id="chat-file-audio" accept="audio/*" class="hidden" onchange="handleChatFileSelected(event,'audio')"/>
+
+          <div class="sticky bottom-0 bg-bg pt-2 pb-2 flex gap-2 items-end">
+            <button onclick="toggleChatAttachMenu()" id="chat-attach-btn" class="flex items-center justify-center rounded-full flex-shrink-0" style="width:38px;height:38px;background:#F3F4F6;margin-bottom:2px;">
+              <span class="material-symbols-outlined text-lg">add</span>
+            </button>
+            <textarea id="chat-input" rows="1" placeholder="Tulis pesan..." data-i18n-placeholder="chat_input_placeholder" style="resize:none; max-height:100px;" oninput="updateChatInputMode()" onkeydown="handleChatInputKeydown(event)"></textarea>
+            <button onclick="sendChatMessage()" id="btn-send-chat" class="btn-primary text-sm py-2.5 px-4 flex-shrink-0" data-i18n="btn_send">Kirim</button>
+            <button id="chat-mic-btn" onmousedown="chatStartVoiceNote()" ontouchstart="chatStartVoiceNote(); event.preventDefault();" onmouseup="chatStopVoiceNote()" onmouseleave="chatCancelVoiceNoteIfRecording()" ontouchend="chatStopVoiceNote(); event.preventDefault();" class="hidden items-center justify-center rounded-full flex-shrink-0" style="width:38px;height:38px;background:#F3F4F6;margin-bottom:2px;">
+              <span class="material-symbols-outlined text-lg">mic</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Share Contact Modal (dipakai di chat online, mengirim type: 'contact') -->
+      <div id="chat-contact-share-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeChatContactShareModal()">
+        <div class="modal">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-black text-lg">Bagikan Kontak</h3>
+            <button onclick="closeChatContactShareModal()" class="text-on-surface-muted hover:text-on-surface p-1 rounded-full">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+          <p class="text-xs text-on-surface-muted mb-1">Nama</p>
+          <input type="text" id="chat-contact-name" placeholder="Nama kontak" class="mb-3"/>
+          <p class="text-xs text-on-surface-muted mb-1">No. HP / Telepon</p>
+          <input type="text" id="chat-contact-phone" placeholder="Contoh: 08123456789" class="mb-4"/>
+          <button onclick="sendChatContactShare()" class="btn-primary text-sm py-2.5 px-4 w-full">Kirim Kontak</button>
         </div>
       </div>
 
@@ -376,29 +450,43 @@
 
       <!-- ===== KEUANGAN (FINANCE) TAB ===== -->
       <div id="tab-finance" class="hidden max-w-[700px] mx-auto px-3 py-6 pb-24">
+
+        <!-- Layar terkunci: tampil kalau menu Keuangan belum dibuka lewat rewarded ad -->
+        <div id="finance-locked" class="hidden flex flex-col items-center justify-center text-center py-16 px-4">
+          <span class="material-symbols-outlined text-6xl mb-4 text-primary opacity-70">lock</span>
+          <h3 class="text-lg font-black text-on-surface mb-1" data-i18n="fin_locked_title">Menu Keuangan Terkunci</h3>
+          <p class="text-sm text-on-surface-muted mb-6 max-w-xs" data-i18n="fin_locked_desc">Tonton iklan singkat untuk membuka menu Keuangan selama 24 jam ke depan.</p>
+          <button id="btn-unlock-finance" onclick="unlockFinanceWithAd()" class="btn-primary text-sm py-2.5 px-6 flex items-center gap-2">
+            <span class="material-symbols-outlined text-base">play_circle</span>
+            <span data-i18n="fin_locked_btn">Tonton Iklan untuk Buka</span>
+          </button>
+          <p id="finance-locked-note" class="hidden text-xs text-on-surface-muted mt-4 max-w-xs" data-i18n="fin_locked_web_note">Fitur ini hanya bisa dibuka lewat aplikasi Android Pesaner.</p>
+        </div>
+
+        <div id="finance-content" class="hidden">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-black text-on-surface">Keuangan</h2>
+          <h2 class="text-xl font-black text-on-surface" data-i18n="fin_title">Keuangan</h2>
           <button onclick="openFinanceTxModal()" class="btn-primary text-sm py-2 px-4 flex items-center gap-1">
-            <span class="material-symbols-outlined text-base">add</span> Transaksi
+            <span class="material-symbols-outlined text-base">add</span> <span data-i18n="fin_btn_new_tx">Transaksi</span>
           </button>
         </div>
 
         <!-- Summary cards -->
         <div class="grid grid-cols-2 gap-3 mb-4">
           <div class="post-card !mb-0">
-            <p class="text-xs text-on-surface-muted font-semibold">Total Aset</p>
+            <p class="text-xs text-on-surface-muted font-semibold" data-i18n="fin_total_assets">Total Aset</p>
             <p id="fin-total-assets" class="text-lg font-black text-primary tabular-nums">Rp 0</p>
           </div>
           <div class="post-card !mb-0">
-            <p class="text-xs text-on-surface-muted font-semibold">Saldo Cair (Liquid)</p>
+            <p class="text-xs text-on-surface-muted font-semibold" data-i18n="fin_liquid_balance">Saldo Cair (Liquid)</p>
             <p id="fin-liquid-total" class="text-lg font-black text-on-surface tabular-nums">Rp 0</p>
           </div>
           <div class="post-card !mb-0">
-            <p class="text-xs text-on-surface-muted font-semibold">Non-Liquid</p>
+            <p class="text-xs text-on-surface-muted font-semibold" data-i18n="fin_nonliquid">Non-Liquid</p>
             <p id="fin-nonliquid-total" class="text-lg font-black text-on-surface tabular-nums">Rp 0</p>
           </div>
           <div class="post-card !mb-0">
-            <p class="text-xs text-on-surface-muted font-semibold">Pengeluaran Bulan Ini</p>
+            <p class="text-xs text-on-surface-muted font-semibold" data-i18n="fin_expense_this_month">Pengeluaran Bulan Ini</p>
             <p id="fin-expense-total" class="text-lg font-black text-secondary tabular-nums">Rp 0</p>
           </div>
         </div>
@@ -406,8 +494,8 @@
         <!-- Target / Goal -->
         <div class="post-card">
           <div class="flex items-center justify-between mb-2">
-            <p class="font-bold text-sm">Target / Goal</p>
-            <button onclick="openFinanceMasterModal('target')" class="text-xs text-primary font-semibold">Kelola Target</button>
+            <p class="font-bold text-sm" data-i18n="fin_target_goal">Target / Goal</p>
+            <button onclick="openFinanceMasterModal('target')" class="text-xs text-primary font-semibold" data-i18n="fin_manage_target">Kelola Target</button>
           </div>
           <div class="flex items-center gap-4">
             <div class="relative w-20 h-20 shrink-0">
@@ -429,7 +517,7 @@
 
         <!-- Doughnut chart pengeluaran per kategori -->
         <div class="post-card">
-          <p class="font-bold text-sm mb-2">Pengeluaran per Kategori (Bulan Ini)</p>
+          <p class="font-bold text-sm mb-2" data-i18n="fin_expense_by_category">Pengeluaran per Kategori (Bulan Ini)</p>
           <div class="flex items-center gap-4">
             <div class="relative w-28 h-28 shrink-0">
               <canvas id="fin-expense-pie"></canvas>
@@ -441,16 +529,136 @@
         <!-- Transaksi list -->
         <div class="post-card">
           <div class="flex items-center justify-between mb-2">
-            <p class="font-bold text-sm">Transaksi Terbaru</p>
-            <button onclick="openFinanceMasterModal('akun')" class="text-xs text-primary font-semibold">Kelola Akun</button>
+            <p class="font-bold text-sm" data-i18n="fin_recent_tx">Transaksi Terbaru</p>
+            <button onclick="openFinanceMasterModal('akun')" class="text-xs text-primary font-semibold" data-i18n="fin_manage_account">Kelola Akun</button>
           </div>
           <div class="flex gap-2 mb-3">
-            <button onclick="openFinanceMasterModal('kategori')" class="btn-outline text-xs py-1.5 px-3">Kelola Kategori</button>
+            <button onclick="openFinanceMasterModal('kategori')" class="btn-outline text-xs py-1.5 px-3" data-i18n="fin_manage_category">Kelola Kategori</button>
           </div>
           <div id="fin-tx-list" class="divide-y divide-gray-100"></div>
           <div id="fin-tx-empty" class="hidden text-center py-8 text-on-surface-muted">
             <span class="material-symbols-outlined text-4xl mb-2 opacity-30">receipt_long</span>
-            <p class="text-sm">Belum ada transaksi.</p>
+            <p class="text-sm" data-i18n="fin_tx_empty">Belum ada transaksi.</p>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <!-- ===== P2P OFFLINE MESSAGING TAB ===== -->
+      <div id="tab-p2p" class="hidden max-w-[700px] mx-auto px-3 py-6 pb-24">
+
+        <!-- Status bar -->
+        <div class="card p-4 mb-4 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span id="p2p-status-dot" style="width:9px;height:9px;border-radius:999px;background:#9CA3AF;display:inline-block;"></span>
+            <span id="p2p-status-text" class="text-sm font-bold">Tidak didukung di perangkat ini</span>
+          </div>
+          <button onclick="scanP2pPeers()" id="p2p-scan-btn" class="btn-primary text-xs py-2 px-4">
+            <span class="material-symbols-outlined text-sm align-middle">radar</span> Cari Perangkat
+          </button>
+        </div>
+
+        <div class="card p-3 mb-4 text-xs text-on-surface-muted leading-relaxed">
+          <b class="text-on-surface">Mode Offline.</b> Pesaner mencari perangkat lain lewat WiFi Direct untuk mengirim pesan tanpa internet.
+          Pesan yang terkirim lewat P2P akan otomatis tersinkron ke server begitu salah satu perangkat online kembali.
+        </div>
+
+        <!-- Peer list -->
+        <div class="card p-4 mb-4">
+          <p class="font-bold text-sm mb-3">Perangkat Ditemukan</p>
+          <div id="p2p-peer-list" class="space-y-2"></div>
+          <div id="p2p-peer-empty" class="text-center py-8 text-on-surface-muted">
+            <span class="material-symbols-outlined text-4xl mb-2 opacity-30">wifi_tethering</span>
+            <p class="text-sm">Belum ada perangkat. Tekan "Cari Perangkat".</p>
+          </div>
+        </div>
+
+        <!-- Recipient -->
+        <div class="card p-4 mb-4">
+          <p class="font-bold text-sm mb-2">Kirim Ke</p>
+          <input type="text" id="p2p-recipient-username" placeholder="Username penerima di Pesaner" class="text-sm" autocapitalize="none" autocorrect="off" spellcheck="false"
+            oninput="onP2pRecipientChanged()" onblur="this.value = this.value.trim(); onP2pRecipientChanged();"/>
+          <p class="text-[11px] text-on-surface-muted mt-2">Harus sudah terhubung ke minimal satu perangkat di atas (lihat status koneksi).</p>
+          <!-- Ready-to-send indicator: replaces guesswork with an explicit state so the
+               user always knows exactly why the send/attach controls are disabled. -->
+          <div id="p2p-ready-indicator" class="flex items-center gap-1.5 mt-2 text-xs font-bold">
+            <span id="p2p-ready-dot" style="width:7px;height:7px;border-radius:999px;background:#9CA3AF;display:inline-block;"></span>
+            <span id="p2p-ready-text">Belum terhubung ke perangkat</span>
+          </div>
+        </div>
+
+        <!-- Chat thread -->
+        <div class="card p-0 mb-4 overflow-hidden">
+          <div id="p2p-thread-messages" class="p-3 space-y-2" style="max-height:360px; overflow-y:auto; min-height:120px;">
+            <div class="text-center py-8 text-on-surface-muted text-xs" id="p2p-thread-empty">
+              Belum ada pesan. Isi username penerima lalu mulai kirim di bawah.
+            </div>
+          </div>
+
+          <!-- Transfer progress bar (shown only while sending/receiving a file) -->
+          <div id="p2p-progress-wrap" class="hidden px-3 pb-2">
+            <div class="flex justify-between text-[10px] text-on-surface-muted mb-1">
+              <span id="p2p-progress-label">Mengirim...</span>
+              <span id="p2p-progress-percent">0%</span>
+            </div>
+            <div style="height:6px;background:#E5E7EB;border-radius:999px;overflow:hidden;">
+              <div id="p2p-progress-bar" style="height:100%;width:0%;background:#0077CC;border-radius:999px;transition:width 0.15s;"></div>
+            </div>
+          </div>
+
+          <!-- Attachment menu (hidden by default) -->
+          <div id="p2p-attach-menu" class="hidden px-3 pb-3 grid grid-cols-3 gap-2" style="border-top:1px solid #F3F4F6; padding-top:10px;">
+            <button onclick="p2pAttach('image')" class="flex flex-col items-center gap-1 py-2 rounded-xl" style="background:#F9FAFB;">
+              <span class="material-symbols-outlined" style="color:#0077CC;">image</span>
+              <span class="text-[10px] font-semibold">Foto</span>
+            </button>
+            <button onclick="p2pAttach('video')" class="flex flex-col items-center gap-1 py-2 rounded-xl" style="background:#F9FAFB;">
+              <span class="material-symbols-outlined" style="color:#7C3AED;">videocam</span>
+              <span class="text-[10px] font-semibold">Video</span>
+            </button>
+            <button onclick="p2pAttach('document')" class="flex flex-col items-center gap-1 py-2 rounded-xl" style="background:#F9FAFB;">
+              <span class="material-symbols-outlined" style="color:#DC2626;">description</span>
+              <span class="text-[10px] font-semibold">Dokumen</span>
+            </button>
+            <button onclick="p2pAttach('audio')" class="flex flex-col items-center gap-1 py-2 rounded-xl" style="background:#F9FAFB;">
+              <span class="material-symbols-outlined" style="color:#059669;">audiotrack</span>
+              <span class="text-[10px] font-semibold">Audio</span>
+            </button>
+            <button onclick="p2pAttachContact()" class="flex flex-col items-center gap-1 py-2 rounded-xl" style="background:#F9FAFB;">
+              <span class="material-symbols-outlined" style="color:#EA580C;">person</span>
+              <span class="text-[10px] font-semibold">Kontak</span>
+            </button>
+          </div>
+
+          <!-- Input row -->
+          <div class="flex items-center gap-2 p-3" style="border-top:1px solid #F3F4F6;">
+            <button onclick="toggleP2pAttachMenu()" id="p2p-attach-btn" class="flex items-center justify-center rounded-full" style="width:36px;height:36px;background:#F3F4F6;flex-shrink:0;">
+              <span class="material-symbols-outlined text-lg">add</span>
+            </button>
+            <input type="text" id="p2p-message-text" placeholder="Tulis pesan..." class="text-sm flex-1" onkeydown="if(event.key==='Enter'){sendP2pMessageUI();}"/>
+            <button id="p2p-send-btn" onclick="sendP2pMessageUI()" class="flex items-center justify-center rounded-full" style="width:36px;height:36px;background:#0077CC;flex-shrink:0;">
+              <span class="material-symbols-outlined text-lg" style="color:#fff;">send</span>
+            </button>
+            <button id="p2p-mic-btn" onmousedown="p2pStartVoiceNote()" ontouchstart="p2pStartVoiceNote(); event.preventDefault();" onmouseup="p2pStopVoiceNote()" ontouchend="p2pStopVoiceNote(); event.preventDefault();" class="hidden items-center justify-center rounded-full" style="width:36px;height:36px;background:#F3F4F6;flex-shrink:0;">
+              <span class="material-symbols-outlined text-lg">mic</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Hidden native file inputs are NOT used here — actual picking happens
+             via AndroidBridge.pickP2pAttachment(), which opens the native
+             Android file/photo/document picker outside the WebView. -->
+
+        <!-- Sync queue -->
+        <div class="card p-4">
+          <div class="flex items-center justify-between mb-3">
+            <p class="font-bold text-sm">Antrian Sinkronisasi</p>
+            <span id="p2p-queue-count" class="text-xs font-bold text-warning" style="color:#F59E0B;">0</span>
+          </div>
+          <div id="p2p-queue-list" class="space-y-2"></div>
+          <div id="p2p-queue-empty" class="text-center py-6 text-on-surface-muted">
+            <span class="material-symbols-outlined text-3xl mb-1 opacity-30">cloud_done</span>
+            <p class="text-xs">Semua pesan sudah tersinkron.</p>
           </div>
         </div>
       </div>
@@ -459,40 +667,40 @@
       <div id="finance-tx-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4 modal-blur bg-black/40">
         <div class="bg-white rounded-2xl w-full max-w-sm p-5 max-h-[90vh] overflow-y-auto">
           <div class="flex justify-between items-center mb-4">
-            <h3 class="font-black text-base">Transaksi Baru</h3>
+            <h3 class="font-black text-base" data-i18n="fin_tx_modal_title">Transaksi Baru</h3>
             <button onclick="closeFinanceTxModal()" class="text-on-surface-muted"><span class="material-symbols-outlined">close</span></button>
           </div>
           <input type="hidden" id="fin-tx-id"/>
           <div class="space-y-3">
             <div class="flex gap-2">
-              <button type="button" onclick="setFinTxType('Expense')" id="fin-tx-type-expense" class="btn-outline flex-1 text-sm py-2 active-toggle">Pengeluaran</button>
-              <button type="button" onclick="setFinTxType('Income')" id="fin-tx-type-income" class="btn-outline flex-1 text-sm py-2">Pemasukan</button>
+              <button type="button" onclick="setFinTxType('Expense')" id="fin-tx-type-expense" class="btn-outline flex-1 text-sm py-2 active-toggle" data-i18n="fin_tx_type_expense">Pengeluaran</button>
+              <button type="button" onclick="setFinTxType('Income')" id="fin-tx-type-income" class="btn-outline flex-1 text-sm py-2" data-i18n="fin_tx_type_income">Pemasukan</button>
             </div>
             <div>
-              <label class="text-xs font-semibold text-on-surface-muted">Tanggal</label>
+              <label class="text-xs font-semibold text-on-surface-muted" data-i18n="fin_label_tanggal">Tanggal</label>
               <input type="date" id="fin-tx-tanggal" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"/>
             </div>
             <div>
-              <label class="text-xs font-semibold text-on-surface-muted">Deskripsi</label>
-              <input type="text" id="fin-tx-deskripsi" placeholder="cth: beli makan siang" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"/>
+              <label class="text-xs font-semibold text-on-surface-muted" data-i18n="fin_label_deskripsi">Deskripsi</label>
+              <input type="text" id="fin-tx-deskripsi" placeholder="cth: beli makan siang" data-i18n-placeholder="fin_ph_deskripsi" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"/>
             </div>
             <div>
-              <label class="text-xs font-semibold text-on-surface-muted">Nominal (Rp)</label>
+              <label class="text-xs font-semibold text-on-surface-muted" data-i18n="fin_label_nominal">Nominal (Rp)</label>
               <input type="number" id="fin-tx-nominal" placeholder="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"/>
             </div>
             <div>
-              <label class="text-xs font-semibold text-on-surface-muted">Kategori</label>
+              <label class="text-xs font-semibold text-on-surface-muted" data-i18n="fin_label_kategori">Kategori</label>
               <select id="fin-tx-kategori" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></select>
             </div>
             <div>
-              <label class="text-xs font-semibold text-on-surface-muted">Akun</label>
+              <label class="text-xs font-semibold text-on-surface-muted" data-i18n="fin_label_akun">Akun</label>
               <select id="fin-tx-akun" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></select>
             </div>
           </div>
           <div class="flex gap-2 mt-5">
-            <button id="fin-tx-delete-btn" onclick="deleteFinanceTx()" class="hidden text-sm text-red-500 font-semibold px-3">Hapus</button>
-            <button onclick="closeFinanceTxModal()" class="btn-outline flex-1 text-sm py-2">Batal</button>
-            <button onclick="saveFinanceTx()" class="btn-primary flex-1 text-sm py-2">Simpan</button>
+            <button id="fin-tx-delete-btn" onclick="deleteFinanceTx()" class="hidden text-sm text-red-500 font-semibold px-3" data-i18n="fin_btn_hapus">Hapus</button>
+            <button onclick="closeFinanceTxModal()" class="btn-outline flex-1 text-sm py-2" data-i18n="btn_cancel">Batal</button>
+            <button onclick="saveFinanceTx()" class="btn-primary flex-1 text-sm py-2" data-i18n="btn_save">Simpan</button>
           </div>
         </div>
       </div>
@@ -509,32 +717,32 @@
           <!-- Form target -->
           <div id="fin-master-form-target" class="hidden space-y-2 border-t border-gray-100 pt-3">
             <input type="hidden" id="fin-target-edit-id"/>
-            <input type="text" id="fin-target-nama-input" placeholder="Nama target (cth: Dana Darurat)" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"/>
-            <input type="number" id="fin-target-nominal-input" placeholder="Nominal target (Rp)" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"/>
-            <button onclick="saveFinanceTarget()" class="btn-primary w-full text-sm py-2">Simpan Target</button>
+            <input type="text" id="fin-target-nama-input" placeholder="Nama target (cth: Dana Darurat)" data-i18n-placeholder="fin_ph_target_nama" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"/>
+            <input type="number" id="fin-target-nominal-input" placeholder="Nominal target (Rp)" data-i18n-placeholder="fin_ph_target_nominal" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"/>
+            <button onclick="saveFinanceTarget()" class="btn-primary w-full text-sm py-2" data-i18n="fin_btn_simpan_target">Simpan Target</button>
           </div>
 
           <!-- Form kategori -->
           <div id="fin-master-form-kategori" class="hidden space-y-2 border-t border-gray-100 pt-3">
             <input type="hidden" id="fin-kategori-edit-id"/>
-            <input type="text" id="fin-kategori-nama-input" placeholder="Nama kategori" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"/>
+            <input type="text" id="fin-kategori-nama-input" placeholder="Nama kategori" data-i18n-placeholder="fin_ph_kategori_nama" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"/>
             <select id="fin-kategori-tipe-input" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
-              <option value="Expense">Expense</option>
-              <option value="Income">Income</option>
+              <option value="Expense" data-i18n="fin_type_expense">Expense</option>
+              <option value="Income" data-i18n="fin_type_income">Income</option>
             </select>
             <input type="color" id="fin-kategori-warna-input" value="#0077CC" class="w-full h-9 border border-gray-200 rounded-lg"/>
-            <button onclick="saveFinanceKategori()" class="btn-primary w-full text-sm py-2">Simpan Kategori</button>
+            <button onclick="saveFinanceKategori()" class="btn-primary w-full text-sm py-2" data-i18n="fin_btn_simpan_kategori">Simpan Kategori</button>
           </div>
 
           <!-- Form akun -->
           <div id="fin-master-form-akun" class="hidden space-y-2 border-t border-gray-100 pt-3">
             <input type="hidden" id="fin-akun-edit-id"/>
-            <input type="text" id="fin-akun-nama-input" placeholder="Nama akun (cth: BCA, Cash)" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"/>
+            <input type="text" id="fin-akun-nama-input" placeholder="Nama akun (cth: BCA, Cash)" data-i18n-placeholder="fin_ph_akun_nama" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"/>
             <select id="fin-akun-jenis-input" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
-              <option value="Liquid">Liquid</option>
-              <option value="Non-Liquid">Non-Liquid</option>
+              <option value="Liquid" data-i18n="fin_type_liquid">Liquid</option>
+              <option value="Non-Liquid" data-i18n="fin_type_nonliquid">Non-Liquid</option>
             </select>
-            <button onclick="saveFinanceAkun()" class="btn-primary w-full text-sm py-2">Simpan Akun</button>
+            <button onclick="saveFinanceAkun()" class="btn-primary w-full text-sm py-2" data-i18n="fin_btn_simpan_akun">Simpan Akun</button>
           </div>
         </div>
       </div>
@@ -583,6 +791,11 @@
     <button onclick="switchTab('finance')" class="flex flex-col items-center gap-0.5 px-3 py-1" id="mnav-finance">
       <span class="material-symbols-outlined text-on-surface-muted">account_balance_wallet</span>
       <span class="text-[10px] font-semibold text-on-surface-muted" data-i18n="nav_finance">Uang</span>
+    </button>
+    <button onclick="switchTab('p2p')" class="flex flex-col items-center gap-0.5 px-3 py-1" id="mnav-p2p" style="position:relative;">
+      <span class="material-symbols-outlined text-on-surface-muted">wifi_tethering</span>
+      <span id="p2p-badge-mobile" class="hidden" style="position:absolute; top:-2px; right:2px; background:#F59E0B; color:#fff; font-size:9px; font-weight:700; min-width:14px; height:14px; border-radius:999px; display:flex; align-items:center; justify-content:center; padding:0 3px;">0</span>
+      <span class="text-[10px] font-semibold text-on-surface-muted">P2P</span>
     </button>
     <button onclick="handleLogout()" class="flex flex-col items-center gap-0.5 px-3 py-1">
       <span class="material-symbols-outlined text-red-500">logout</span>
@@ -875,11 +1088,36 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyohmBDHfhqdb7Vc8GXp
 // ======= I18N (ID/EN) =======
 const I18N = {
   id: {
-    nav_header: 'Navigasi', nav_feed: 'Feed', nav_chat: 'Chat', nav_journal: 'Jurnal', nav_profile: 'Profil', nav_admin: 'Admin', nav_logout: 'Keluar',
+    nav_header: 'Navigasi', nav_feed: 'Feed', nav_chat: 'Chat', nav_journal: 'Jurnal', nav_finance: 'Keuangan', nav_profile: 'Profil', nav_admin: 'Admin', nav_logout: 'Keluar',
+    fin_toast_fail_active_target: 'Gagal menyimpan target aktif', fin_toast_incomplete_tx: 'Lengkapi semua data transaksi.',
+    fin_locked_title: 'Menu Keuangan Terkunci', fin_locked_desc: 'Tonton iklan singkat untuk membuka menu Keuangan selama 24 jam ke depan.',
+    fin_locked_btn: 'Tonton Iklan untuk Buka', fin_locked_web_note: 'Fitur ini hanya bisa dibuka lewat aplikasi Android Pesaner.',
+    fin_toast_unlocked: 'Menu Keuangan terbuka!', fin_toast_ad_incomplete: 'Iklan belum selesai ditonton, coba lagi.', fin_toast_need_app: 'Buka lewat aplikasi Android Pesaner untuk menonton iklan.',
+    fin_toast_save_tx_fail: 'Gagal menyimpan transaksi.', fin_toast_tx_saved: 'Transaksi disimpan.', fin_toast_server_fail: 'Gagal terhubung ke server',
+    fin_toast_delete_tx_fail: 'Gagal menghapus transaksi.', fin_toast_tx_deleted: 'Transaksi dihapus.',
+    fin_toast_invalid_target: 'Isi nama dan nominal target dengan benar.', fin_toast_save_target_fail: 'Gagal menyimpan target.', fin_toast_target_saved: 'Target disimpan.',
+    fin_toast_delete_target_fail: 'Gagal menghapus target.', fin_toast_target_deleted: 'Target dihapus.',
+    fin_toast_invalid_kategori: 'Isi nama kategori.', fin_toast_save_kategori_fail: 'Gagal menyimpan kategori.', fin_toast_kategori_saved: 'Kategori disimpan.',
+    fin_toast_delete_kategori_fail: 'Gagal menghapus kategori.', fin_toast_kategori_deleted: 'Kategori dihapus.',
+    fin_toast_invalid_akun: 'Isi nama akun.', fin_toast_save_akun_fail: 'Gagal menyimpan akun.', fin_toast_akun_saved: 'Akun disimpan.',
+    fin_toast_delete_akun_fail: 'Gagal menghapus akun.', fin_toast_akun_deleted: 'Akun dihapus.',
+    fin_title: 'Keuangan', fin_btn_new_tx: 'Transaksi',
+    fin_total_assets: 'Total Aset', fin_liquid_balance: 'Saldo Cair (Liquid)', fin_nonliquid: 'Non-Liquid', fin_expense_this_month: 'Pengeluaran Bulan Ini',
+    fin_target_goal: 'Target / Goal', fin_manage_target: 'Kelola Target', fin_no_target: 'Belum ada target',
+    fin_expense_by_category: 'Pengeluaran per Kategori (Bulan Ini)', fin_no_expense_this_month: 'Belum ada pengeluaran bulan ini.',
+    fin_recent_tx: 'Transaksi Terbaru', fin_manage_account: 'Kelola Akun', fin_manage_category: 'Kelola Kategori', fin_tx_empty: 'Belum ada transaksi.',
+    fin_tx_modal_title: 'Transaksi Baru', fin_tx_type_expense: 'Pengeluaran', fin_tx_type_income: 'Pemasukan',
+    fin_label_tanggal: 'Tanggal', fin_label_deskripsi: 'Deskripsi', fin_ph_deskripsi: 'cth: beli makan siang',
+    fin_label_nominal: 'Nominal (Rp)', fin_label_kategori: 'Kategori', fin_label_akun: 'Akun',
+    fin_no_kategori: 'Belum ada kategori', fin_no_akun: 'Belum ada akun', fin_btn_hapus: 'Hapus',
+    fin_ph_target_nama: 'Nama target (cth: Dana Darurat)', fin_ph_target_nominal: 'Nominal target (Rp)', fin_btn_simpan_target: 'Simpan Target',
+    fin_ph_kategori_nama: 'Nama kategori', fin_type_expense: 'Expense', fin_type_income: 'Income', fin_btn_simpan_kategori: 'Simpan Kategori',
+    fin_ph_akun_nama: 'Nama akun (cth: BCA, Cash)', fin_type_liquid: 'Liquid', fin_type_nonliquid: 'Non-Liquid', fin_btn_simpan_akun: 'Simpan Akun',
+    fin_empty_target: 'Belum ada target.', fin_empty_kategori: 'Belum ada kategori.', fin_empty_akun: 'Belum ada akun.', fin_active_badge: 'Aktif',
     btn_post: '+ Post', btn_buat_post: '+ Buat Post', btn_wa_status_side: '📱 Status WA Mood', btn_wa_status: 'Buat Status WA Mood 🔥',
     feed_composer_placeholder: 'Apa yang ingin kamu bagikan?', feed_empty: 'Belum ada post. Jadilah yang pertama!',
     btn_load_more_feed: 'Muat 10 Post Lagi',
-    btn_edit_profile: 'Edit Profil', btn_follow: 'Follow', btn_following: 'Mengikuti',
+    btn_edit_profile: 'Edit Profil', btn_follow: 'Follow', btn_following: 'Mengikuti', btn_chat: 'Chat',
     label_posts: 'Posts', label_following: 'Mengikuti', label_followers: 'Pengikut', profile_no_posts: 'Belum ada post',
     chat_title: 'Pesan', btn_new_chat: '+ Chat Baru', chat_empty: 'Belum ada percakapan. Mulai chat baru!',
     btn_load_more_chat: 'Muat pesan sebelumnya', chat_input_placeholder: 'Tulis pesan...', btn_send: 'Kirim',
@@ -917,6 +1155,10 @@ const I18N = {
     wa_modal_title: 'Buat Status WA Mood', wa_choose_mood: 'Pilih mood kamu hari ini:', wa_next: 'Lanjut →',
     wa_change_mood: 'Ganti Mood', wa_line1_label: 'Baris 1 — Kalimat Utama', wa_line1_ph: 'Contoh: Hari ini aku lagi...',
     wa_pick_post_label: 'Ambil teks dari post kamu (opsional)', wa_pick_post_ph: 'Cari post kamu...',
+    wa_pick_post_loading: 'Memuat post kamu...',
+    wa_mood_default: 'Biasa Aja', wa_mood_gelisah: 'Gelisah', wa_mood_happy: 'Happy', wa_mood_kaya: 'Kaya',
+    wa_mood_kecewa: 'Kecewa', wa_mood_keren: 'Keren', wa_mood_marah: 'Marah', wa_mood_miskin: 'Miskin',
+    wa_mood_sad: 'Sedih', wa_mood_tampan: 'Tampan',
     wa_no_posts: 'Kamu belum punya post.', wa_show_date: 'Tampilkan tanggal post di pojok kiri bawah gambar',
     wa_line2_label: 'Baris 2 — Sub-teks (opsional)', wa_line2_ph: 'Contoh: #MoodHariIni',
     wa_font_size: 'Ukuran teks:', wa_size_sm: 'Kecil', wa_size_md: 'Sedang', wa_size_lg: 'Besar',
@@ -949,11 +1191,36 @@ const I18N = {
     btn_register: 'Daftar'
   },
   en: {
-    nav_header: 'Navigation', nav_feed: 'Feed', nav_chat: 'Chat', nav_journal: 'Journal', nav_profile: 'Profile', nav_admin: 'Admin', nav_logout: 'Log Out',
+    nav_header: 'Navigation', nav_feed: 'Feed', nav_chat: 'Chat', nav_journal: 'Journal', nav_finance: 'Finance', nav_profile: 'Profile', nav_admin: 'Admin', nav_logout: 'Log Out',
+    fin_toast_fail_active_target: 'Failed to save active target', fin_toast_incomplete_tx: 'Please complete all transaction fields.',
+    fin_locked_title: 'Finance Menu Locked', fin_locked_desc: 'Watch a short ad to unlock the Finance menu for the next 24 hours.',
+    fin_locked_btn: 'Watch Ad to Unlock', fin_locked_web_note: 'This feature can only be unlocked from the Pesaner Android app.',
+    fin_toast_unlocked: 'Finance menu unlocked!', fin_toast_ad_incomplete: 'Ad was not finished, please try again.', fin_toast_need_app: 'Open the Pesaner Android app to watch the ad.',
+    fin_toast_save_tx_fail: 'Failed to save transaction.', fin_toast_tx_saved: 'Transaction saved.', fin_toast_server_fail: 'Failed to connect to server',
+    fin_toast_delete_tx_fail: 'Failed to delete transaction.', fin_toast_tx_deleted: 'Transaction deleted.',
+    fin_toast_invalid_target: 'Fill in the target name and amount correctly.', fin_toast_save_target_fail: 'Failed to save target.', fin_toast_target_saved: 'Target saved.',
+    fin_toast_delete_target_fail: 'Failed to delete target.', fin_toast_target_deleted: 'Target deleted.',
+    fin_toast_invalid_kategori: 'Fill in the category name.', fin_toast_save_kategori_fail: 'Failed to save category.', fin_toast_kategori_saved: 'Category saved.',
+    fin_toast_delete_kategori_fail: 'Failed to delete category.', fin_toast_kategori_deleted: 'Category deleted.',
+    fin_toast_invalid_akun: 'Fill in the account name.', fin_toast_save_akun_fail: 'Failed to save account.', fin_toast_akun_saved: 'Account saved.',
+    fin_toast_delete_akun_fail: 'Failed to delete account.', fin_toast_akun_deleted: 'Account deleted.',
+    fin_title: 'Finance', fin_btn_new_tx: 'Transaction',
+    fin_total_assets: 'Total Assets', fin_liquid_balance: 'Liquid Balance', fin_nonliquid: 'Non-Liquid', fin_expense_this_month: "This Month's Expenses",
+    fin_target_goal: 'Target / Goal', fin_manage_target: 'Manage Target', fin_no_target: 'No target yet',
+    fin_expense_by_category: 'Expenses by Category (This Month)', fin_no_expense_this_month: 'No expenses this month.',
+    fin_recent_tx: 'Recent Transactions', fin_manage_account: 'Manage Accounts', fin_manage_category: 'Manage Categories', fin_tx_empty: 'No transactions yet.',
+    fin_tx_modal_title: 'New Transaction', fin_tx_type_expense: 'Expense', fin_tx_type_income: 'Income',
+    fin_label_tanggal: 'Date', fin_label_deskripsi: 'Description', fin_ph_deskripsi: 'e.g. lunch',
+    fin_label_nominal: 'Amount (Rp)', fin_label_kategori: 'Category', fin_label_akun: 'Account',
+    fin_no_kategori: 'No categories yet', fin_no_akun: 'No accounts yet', fin_btn_hapus: 'Delete',
+    fin_ph_target_nama: 'Target name (e.g. Emergency Fund)', fin_ph_target_nominal: 'Target amount (Rp)', fin_btn_simpan_target: 'Save Target',
+    fin_ph_kategori_nama: 'Category name', fin_type_expense: 'Expense', fin_type_income: 'Income', fin_btn_simpan_kategori: 'Save Category',
+    fin_ph_akun_nama: 'Account name (e.g. BCA, Cash)', fin_type_liquid: 'Liquid', fin_type_nonliquid: 'Non-Liquid', fin_btn_simpan_akun: 'Save Account',
+    fin_empty_target: 'No targets yet.', fin_empty_kategori: 'No categories yet.', fin_empty_akun: 'No accounts yet.', fin_active_badge: 'Active',
     btn_post: '+ Post', btn_buat_post: '+ New Post', btn_wa_status_side: '📱 WA Mood Status', btn_wa_status: 'Create WA Mood Status 🔥',
     feed_composer_placeholder: "What's on your mind?", feed_empty: 'No posts yet. Be the first!',
     btn_load_more_feed: 'Load 10 More Posts',
-    btn_edit_profile: 'Edit Profile', btn_follow: 'Follow', btn_following: 'Following',
+    btn_edit_profile: 'Edit Profile', btn_follow: 'Follow', btn_following: 'Following', btn_chat: 'Chat',
     label_posts: 'Posts', label_following: 'Following', label_followers: 'Followers', profile_no_posts: 'No posts yet',
     chat_title: 'Messages', btn_new_chat: '+ New Chat', chat_empty: 'No conversations yet. Start a new chat!',
     btn_load_more_chat: 'Load earlier messages', chat_input_placeholder: 'Type a message...', btn_send: 'Send',
@@ -991,6 +1258,10 @@ const I18N = {
     wa_modal_title: 'Create WA Mood Status', wa_choose_mood: 'Pick your mood today:', wa_next: 'Next →',
     wa_change_mood: 'Change Mood', wa_line1_label: 'Line 1 — Main Sentence', wa_line1_ph: 'e.g. Today I feel...',
     wa_pick_post_label: 'Pull text from your post (optional)', wa_pick_post_ph: 'Search your posts...',
+    wa_pick_post_loading: 'Loading your posts...',
+    wa_mood_default: 'Just Fine', wa_mood_gelisah: 'Anxious', wa_mood_happy: 'Happy', wa_mood_kaya: 'Rich',
+    wa_mood_kecewa: 'Disappointed', wa_mood_keren: 'Cool', wa_mood_marah: 'Angry', wa_mood_miskin: 'Broke',
+    wa_mood_sad: 'Sad', wa_mood_tampan: 'Handsome',
     wa_no_posts: "You don't have any posts yet.", wa_show_date: 'Show post date in the bottom-left corner',
     wa_line2_label: 'Line 2 — Sub-text (optional)', wa_line2_ph: 'e.g. #MoodToday',
     wa_font_size: 'Text size:', wa_size_sm: 'Small', wa_size_md: 'Medium', wa_size_lg: 'Large',
@@ -1120,6 +1391,21 @@ function setLang(lang) {
     if (document.getElementById('tab-chat') && !document.getElementById('tab-chat').classList.contains('hidden')) {
       if (document.getElementById('chat-list-view') && !document.getElementById('chat-list-view').classList.contains('hidden')) loadChatList();
     }
+    if (document.getElementById('wa-status-modal') && !document.getElementById('wa-status-modal').classList.contains('hidden')) {
+      if (document.getElementById('mood-grid')) renderMoodGrid();
+      if (waSelectedMood && document.getElementById('wa-selected-mood-label') && !document.getElementById('wa-step-2').classList.contains('hidden')) {
+        const meta = MOOD_META[waSelectedMood] || { emoji: '' };
+        document.getElementById('wa-selected-mood-label').textContent = meta.emoji + ' ' + moodLabel(waSelectedMood);
+      }
+    }
+    if (document.getElementById('tab-finance') && !document.getElementById('tab-finance').classList.contains('hidden')) {
+      if (typeof finData !== 'undefined' && finData) renderFinanceAll();
+      if (document.getElementById('finance-master-modal') && !document.getElementById('finance-master-modal').classList.contains('hidden')) {
+        const titles = { target: t('fin_manage_target'), kategori: t('fin_manage_category'), akun: t('fin_manage_account') };
+        document.getElementById('fin-master-title').textContent = titles[finMasterMode];
+        renderFinanceMasterList();
+      }
+    }
     updateChatBadge();
   }
 }
@@ -1176,6 +1462,131 @@ async function apiCall(action, data = {}) {
   const text = await resp.text();
   try { return JSON.parse(text); }
   catch(e) { throw new Error('Server error: ' + text.substring(0,200)); }
+}
+
+// Dipakai khusus untuk payload besar (upload file base64) yang tidak muat di
+// URL query string. Content-Type sengaja "text/plain" (bukan application/json)
+// supaya browser TIDAK mengirim preflight OPTIONS — Apps Script Web App tidak
+// mengimplementasikan doOptions, jadi preflight akan gagal kalau pakai
+// application/json. Isi body tetap JSON valid, cuma header-nya saja yang beda.
+async function apiPostJson(action, data = {}) {
+  const resp = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action, ...data }),
+    redirect: 'follow'
+  });
+  const text = await resp.text();
+  try { return JSON.parse(text); }
+  catch(e) { throw new Error('Server error: ' + text.substring(0,200)); }
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = () => reject(new Error('Gagal membaca file'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// ======= CACHE-FIRST (STALE-WHILE-REVALIDATE) =======
+// Dipakai supaya pindah menu terasa instan: tampilkan data lama dari
+// localStorage dulu (kalau ada), lalu diam-diam ambil data terbaru dari
+// server di belakang layar dan perbarui tampilan hanya jika ada perubahan.
+const CACHE_PREFIX = 'pesaner_cache_';
+
+function cacheGet(key) {
+  try {
+    const raw = localStorage.getItem(CACHE_PREFIX + key);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch(e) { return null; }
+}
+
+function cacheSet(key, data) {
+  try {
+    localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ data, ts: Date.now() }));
+  } catch(e) { /* localStorage penuh/di-nonaktifkan, abaikan saja */ }
+}
+
+function cacheClear(key) {
+  try { localStorage.removeItem(CACHE_PREFIX + key); } catch(e) {}
+}
+
+// Dipanggil setelah aksi tulis (post baru, like, edit profil, dll) supaya
+// menu terkait mengambil data segar di kunjungan berikutnya, bukan cache basi.
+function cacheInvalidate(keys) {
+  (Array.isArray(keys) ? keys : [keys]).forEach(cacheClear);
+}
+
+function userCacheKey(base) {
+  return base + '_' + (currentUser ? currentUser.username : 'anon');
+}
+
+// ======= UNLOCK MENU KEUANGAN VIA REWARDED AD =======
+// Menu Keuangan dikunci di balik AdMob Rewarded Video (native app saja).
+// Status buka disimpan di localStorage dengan masa berlaku, supaya user
+// tidak perlu nonton iklan lagi setiap kali pindah menu dalam durasi tsb.
+const FINANCE_UNLOCK_HOURS = 24;
+
+function financeUnlockKey() {
+  return 'pesaner_fin_unlock_' + (currentUser ? currentUser.username : 'anon');
+}
+
+function isFinanceUnlocked() {
+  try {
+    const raw = localStorage.getItem(financeUnlockKey());
+    if (!raw) return false;
+    const expiresAt = parseInt(raw, 10);
+    return !isNaN(expiresAt) && Date.now() < expiresAt;
+  } catch(e) { return false; }
+}
+
+function setFinanceUnlocked() {
+  try {
+    const expiresAt = Date.now() + FINANCE_UNLOCK_HOURS * 60 * 60 * 1000;
+    localStorage.setItem(financeUnlockKey(), String(expiresAt));
+  } catch(e) {}
+}
+
+// Dipanggil MainActivity.kt lewat webView.evaluateJavascript setelah rewarded
+// ad ditutup. earned=true kalau user nonton sampai selesai.
+window.__onRewardResult = function(earned) {
+  const btn = document.getElementById('btn-unlock-finance');
+  if (btn) { btn.disabled = false; btn.classList.remove('opacity-60'); }
+
+  if (earned) {
+    setFinanceUnlocked();
+    showToast(t('fin_toast_unlocked') || 'Menu Keuangan terbuka!');
+    renderFinanceLockState();
+  } else {
+    showToast(t('fin_toast_ad_incomplete') || 'Iklan belum selesai ditonton, coba lagi.', 'error');
+  }
+};
+
+function unlockFinanceWithAd() {
+  const isNative = !!(window.AndroidBridge && typeof window.AndroidBridge.isNativeApp === 'function' && window.AndroidBridge.isNativeApp());
+  const noteEl = document.getElementById('finance-locked-note');
+
+  if (!isNative) {
+    // Dibuka lewat browser biasa (bukan APK) -> rewarded ad tidak tersedia
+    if (noteEl) noteEl.classList.remove('hidden');
+    showToast(t('fin_toast_need_app') || 'Buka lewat aplikasi Android Pesaner untuk menonton iklan.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btn-unlock-finance');
+  if (btn) { btn.disabled = true; btn.classList.add('opacity-60'); }
+  window.AndroidBridge.showRewardedAd();
+}
+
+// Tampilkan layar kunci atau konten Keuangan sesuai status unlock saat ini.
+function renderFinanceLockState() {
+  const unlocked = isFinanceUnlocked();
+  document.getElementById('finance-locked').classList.toggle('hidden', unlocked);
+  document.getElementById('finance-content').classList.toggle('hidden', !unlocked);
+  if (unlocked) loadFinance();
 }
 
 // ======= AUTH =======
@@ -1240,6 +1651,9 @@ function showRegisterError(msg) {
 }
 
 function handleLogout() {
+  if (window.AndroidBridge && typeof window.AndroidBridge.notifyLoggedOut === 'function') {
+    window.AndroidBridge.notifyLoggedOut();
+  }
   currentUser = null;
   stopChatThreadPolling();
   stopChatListPolling();
@@ -1274,11 +1688,18 @@ function initApp() {
 
   switchTab('feed');
   startChatBadgePolling();
+
+  // Beritahu shell Android (kalau berjalan sebagai APK) bahwa user ini sudah
+  // login, supaya token FCM device didaftarkan/diperbarui ke backend —
+  // dipakai backend untuk mengirim push notification saat ada chat masuk.
+  if (window.AndroidBridge && typeof window.AndroidBridge.notifyLoggedIn === 'function') {
+    window.AndroidBridge.notifyLoggedIn(currentUser.username);
+  }
 }
 
 // ======= TABS =======
 function switchTab(tab) {
-  ['feed','profile','admin','chat','journal','finance'].forEach(t => {
+  ['feed','profile','admin','chat','journal','finance','p2p'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('hidden', t !== tab);
   });
   // Update sidebar active
@@ -1294,7 +1715,8 @@ function switchTab(tab) {
   if (tab === 'admin') loadAdmin();
   if (tab === 'chat') openChatList();
   if (tab === 'journal') loadJournal();
-  if (tab === 'finance') loadFinance();
+  if (tab === 'finance') renderFinanceLockState();
+  if (tab === 'p2p') initP2pTab();
 }
 
 // Profil siapa yang sedang dilihat. null = profil sendiri.
@@ -1319,13 +1741,30 @@ let feedHasMore = false;
 let feedLoadingMore = false;
 
 async function loadFeed() {
-  document.getElementById('feed-loading').classList.remove('hidden');
-  document.getElementById('posts-container').innerHTML = '';
+  const cacheKey = userCacheKey('feed');
+  const cached = cacheGet(cacheKey);
   document.getElementById('feed-empty').classList.add('hidden');
   document.getElementById('btn-load-more-feed').classList.add('hidden');
-  allPosts = [];
-  feedOffset = 0;
-  feedHasMore = false;
+
+  if (cached && cached.data && cached.data.posts && cached.data.posts.length) {
+    // 1. Tampilkan cache dulu, instan, tanpa spinner
+    allPosts = cached.data.posts;
+    feedOffset = allPosts.length;
+    feedHasMore = !!cached.data.hasMore;
+    renderPosts(allPosts, 'posts-container');
+    document.getElementById('feed-empty').classList.toggle('hidden', allPosts.length > 0);
+    document.getElementById('btn-load-more-feed').classList.toggle('hidden', !feedHasMore);
+    document.getElementById('feed-loading').classList.add('hidden');
+  } else {
+    // Belum ada cache sama sekali -> baru tampilkan loading spinner
+    document.getElementById('feed-loading').classList.remove('hidden');
+    document.getElementById('posts-container').innerHTML = '';
+    allPosts = [];
+    feedOffset = 0;
+    feedHasMore = false;
+  }
+
+  // 2. Ambil data terbaru di belakang layar, tidak memblokir tampilan
   try {
     const res = await apiCall('getPosts', { username: currentUser.username, offset: 0, limit: FEED_PAGE_SIZE });
     allPosts = res.posts || [];
@@ -1334,8 +1773,10 @@ async function loadFeed() {
     renderPosts(allPosts, 'posts-container');
     document.getElementById('feed-empty').classList.toggle('hidden', allPosts.length > 0);
     document.getElementById('btn-load-more-feed').classList.toggle('hidden', !feedHasMore);
+    cacheSet(cacheKey, { posts: allPosts, hasMore: feedHasMore });
   } catch(e) {
-    showToast(t('toast_feed_load_fail'), 'error');
+    if (!cached) showToast(t('toast_feed_load_fail'), 'error');
+    // Kalau ada cache lama, biarkan tetap tampil apa adanya (UX tidak terganggu)
   }
   document.getElementById('feed-loading').classList.add('hidden');
 }
@@ -1518,13 +1959,27 @@ function selectEditJournalMood(m) {
 
 async function loadJournal() {
   renderMoodPicker('journal-mood-picker', selectedJournalMood, 'selectJournalMood');
-  document.getElementById('journal-loading').classList.remove('hidden');
-  document.getElementById('journal-list').innerHTML = '';
+  const cacheKey = userCacheKey('journal');
+  const cached = cacheGet(cacheKey);
   document.getElementById('journal-empty').classList.add('hidden');
   document.getElementById('btn-load-more-journal').classList.add('hidden');
-  journalEntries = [];
-  journalOffset = 0;
-  journalHasMore = false;
+
+  if (cached && cached.data && cached.data.entries && cached.data.entries.length) {
+    journalEntries = cached.data.entries;
+    journalOffset = journalEntries.length;
+    journalHasMore = !!cached.data.hasMore;
+    renderJournalList();
+    document.getElementById('journal-empty').classList.toggle('hidden', journalEntries.length > 0);
+    document.getElementById('btn-load-more-journal').classList.toggle('hidden', !journalHasMore);
+    document.getElementById('journal-loading').classList.add('hidden');
+  } else {
+    document.getElementById('journal-loading').classList.remove('hidden');
+    document.getElementById('journal-list').innerHTML = '';
+    journalEntries = [];
+    journalOffset = 0;
+    journalHasMore = false;
+  }
+
   try {
     const res = await apiCall('getJournalEntries', { username: currentUser.username, offset: 0, limit: JOURNAL_PAGE_SIZE });
     journalEntries = res.entries || [];
@@ -1533,8 +1988,9 @@ async function loadJournal() {
     renderJournalList();
     document.getElementById('journal-empty').classList.toggle('hidden', journalEntries.length > 0);
     document.getElementById('btn-load-more-journal').classList.toggle('hidden', !journalHasMore);
+    cacheSet(cacheKey, { entries: journalEntries, hasMore: journalHasMore });
   } catch (e) {
-    showToast(t('toast_journal_load_fail'), 'error');
+    if (!cached) showToast(t('toast_journal_load_fail'), 'error');
   }
   document.getElementById('journal-loading').classList.add('hidden');
 }
@@ -1645,6 +2101,7 @@ async function saveEditJournalEntry() {
       renderJournalList();
       closeEditJournalModal();
       showToast(t('toast_journal_updated'));
+      cacheInvalidate(userCacheKey('journal'));
     } else {
       showToast(translateServerMsg(res.message) || t('toast_update_fail'), 'error');
     }
@@ -1664,12 +2121,56 @@ async function deleteJournalEntryConfirm(id) {
       document.getElementById('journal-' + id)?.remove();
       document.getElementById('journal-empty').classList.toggle('hidden', journalEntries.length > 0);
       showToast(t('toast_journal_deleted'));
+      cacheInvalidate(userCacheKey('journal'));
     } else {
       showToast(translateServerMsg(res.message) || t('toast_delete_fail'), 'error');
     }
   } catch (e) {
     showToast(t('toast_journal_delete_fail'), 'error');
   }
+}
+
+// ======= NOTIFIKASI SUARA CHAT =======
+// Pakai Web Audio API (nada beep sintetis) supaya tidak perlu file audio
+// eksternal dan tetap ringan. Browser modern memblokir audio otomatis
+// sebelum ada interaksi user, jadi AudioContext baru dibuat/di-resume saat
+// user pertama kali menyentuh layar (klik/tap), lalu dipakai ulang seterusnya.
+let notifAudioCtx = null;
+
+function unlockNotifAudio() {
+  if (notifAudioCtx) {
+    if (notifAudioCtx.state === 'suspended') notifAudioCtx.resume().catch(()=>{});
+    return;
+  }
+  try {
+    notifAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  } catch(e) { /* Web Audio tidak didukung, abaikan */ }
+}
+document.addEventListener('click', unlockNotifAudio, { once: true });
+document.addEventListener('touchstart', unlockNotifAudio, { once: true });
+
+function playChatNotificationSound() {
+  if (!notifAudioCtx) { unlockNotifAudio(); if (!notifAudioCtx) return; }
+  if (notifAudioCtx.state === 'suspended') notifAudioCtx.resume().catch(()=>{});
+
+  try {
+    const ctx = notifAudioCtx;
+    const now = ctx.currentTime;
+
+    // Dua nada pendek (naik) mirip notifikasi chat pada umumnya
+    [ [880, now, 0.11], [1175, now + 0.11, 0.14] ].forEach(([freq, start, dur]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.22, start + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + dur + 0.02);
+    });
+  } catch(e) { /* jangan sampai error suara mengganggu fungsi chat */ }
 }
 
 // ======= CHAT =======
@@ -1688,11 +2189,22 @@ function startChatBadgePolling() {
   chatBadgePollInterval = setInterval(updateChatBadge, 20000);
 }
 
+let lastKnownUnreadTotal = 0;
+
 async function updateChatBadge() {
   if (!currentUser) return;
   try {
     const res = await apiCall('getConversations', { username: currentUser.username });
     const total = (res.conversations || []).reduce((s, c) => s + (c.unread || 0), 0);
+
+    // Kalau total unread bertambah dibanding sebelumnya, artinya ada pesan
+    // baru masuk (dari percakapan mana pun, bahkan saat user tidak sedang
+    // membuka menu Chat) -> bunyikan notifikasi.
+    if (total > lastKnownUnreadTotal) {
+      playChatNotificationSound();
+    }
+    lastKnownUnreadTotal = total;
+
     ['chat-badge-side', 'chat-badge-mobile'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
@@ -1784,6 +2296,21 @@ function backToChatList() {
   openChatList();
 }
 
+// Dipanggil dari MainActivity.kt (Android) saat user men-tap notifikasi push
+// chat masuk. Memastikan tab Chat aktif lalu langsung membuka thread yang
+// dituju. Nama tampilan diambil dari daftar percakapan yang sudah ada; kalau
+// belum ada di cache, tampilkan username dulu sebagai placeholder.
+async function openChatThreadByUsername(username) {
+  if (!currentUser) return; // sesi belum siap, akan dicoba lagi lewat pendingOpenChatUsername di native
+  switchTab('chat');
+  let name = username;
+  try {
+    const res = await apiCall('getUserProfile', { username, viewerUsername: currentUser.username });
+    if (res.success && res.profile) name = res.profile.name || username;
+  } catch(e) { /* pakai username sebagai fallback nama */ }
+  openChatThread(username, name);
+}
+
 async function loadChatThread(scrollToBottom) {
   const loading = document.getElementById('chat-messages-loading');
   loading.classList.remove('hidden');
@@ -1854,6 +2381,7 @@ async function pollNewChatMessages() {
 
     const incoming = newOnes.some(m => m.fromUsername === activeChatUsername);
     if (incoming) {
+      playChatNotificationSound();
       apiCall('markConversationRead', { username: currentUser.username, otherUsername: activeChatUsername }).catch(()=>{});
       updateChatBadge();
     }
@@ -1873,13 +2401,71 @@ function chatStatusHtml(m) {
   return `<span>✓</span>`;
 }
 
+// Isi bubble sesuai tipe pesan. Tipe selain 'text' selalu punya fileUrl
+// (kecuali 'contact', yang datanya ada di content sebagai JSON string).
+function chatBubbleContent(m) {
+  const type = m.type || 'text';
+
+  if (type === 'image') {
+    return `<a href="${escHtml(m.fileUrl)}" target="_blank" rel="noopener noreferrer">
+      <img src="${escHtml(m.fileUrl)}" style="max-width:220px;max-height:280px;border-radius:12px;display:block;object-fit:cover;"/>
+    </a>${m.content ? `<div class="mt-1.5">${linkifyContent(m.content)}</div>` : ''}`;
+  }
+
+  if (type === 'video') {
+    return `<video controls preload="metadata" style="max-width:220px;max-height:280px;border-radius:12px;display:block;">
+      <source src="${escHtml(m.fileUrl)}">
+    </video>${m.content ? `<div class="mt-1.5">${linkifyContent(m.content)}</div>` : ''}`;
+  }
+
+  if (type === 'audio' || type === 'voice') {
+    const label = type === 'voice' ? '🎤 Pesan Suara' : '🎵 ' + (m.fileName || 'Audio');
+    const dur = m.duration ? ` · ${m.duration}s` : '';
+    return `<div class="text-xs font-bold mb-1">${label}${dur}</div>
+      <audio controls preload="metadata" style="max-width:220px;height:36px;">
+        <source src="${escHtml(m.fileUrl)}">
+      </audio>`;
+  }
+
+  if (type === 'document') {
+    const size = m.fileSize ? formatFileSize(Number(m.fileSize)) : '';
+    return `<a href="${escHtml(m.fileUrl)}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2" style="text-decoration:none;color:inherit;">
+      <span class="material-symbols-outlined" style="font-size:28px;">description</span>
+      <div class="min-w-0">
+        <div class="text-xs font-bold truncate" style="max-width:160px;">${escHtml(m.fileName || 'Dokumen')}</div>
+        <div class="text-[10px] opacity-70">${size}</div>
+      </div>
+    </a>`;
+  }
+
+  if (type === 'contact') {
+    let c = { name: 'Kontak', phone: '' };
+    try { c = Object.assign(c, JSON.parse(m.content)); } catch (e) {}
+    const telHref = c.phone ? `tel:${encodeURIComponent(c.phone)}` : '#';
+    return `<div class="flex items-center gap-2">
+      <span class="material-symbols-outlined" style="font-size:28px;">person</span>
+      <div class="min-w-0">
+        <div class="text-xs font-bold truncate" style="max-width:160px;">${escHtml(c.name)}</div>
+        <div class="text-[10px] opacity-70">${escHtml(c.phone)}</div>
+      </div>
+      ${c.phone ? `<a href="${telHref}" class="ml-1" style="color:inherit;"><span class="material-symbols-outlined" style="font-size:20px;">call</span></a>` : ''}
+    </div>`;
+  }
+
+  // default: text
+  return linkifyContent(m.content);
+}
+
 function renderChatMessages() {
   const container = document.getElementById('chat-messages');
   container.innerHTML = chatMessages.map(m => {
     const isMe = m.fromUsername === currentUser.username;
+    const type = m.type || 'text';
+    const mediaTypes = ['image', 'video', 'document', 'audio', 'voice', 'contact'];
+    const bubbleClass = mediaTypes.includes(type) ? ' media' : '';
     return `<div class="chat-bubble-row ${isMe ? 'me' : 'them'}">
       <div class="chat-bubble-wrap">
-        <div class="chat-bubble ${isMe ? 'me' : 'them'}">${linkifyContent(m.content)}</div>
+        <div class="chat-bubble ${isMe ? 'me' : 'them'}${bubbleClass}">${chatBubbleContent(m)}</div>
         <div class="chat-bubble-time ${isMe ? 'me' : 'them'}">
           <span>${formatDateTime(m.createdAt)}</span>
           ${isMe ? chatStatusHtml(m) : ''}
@@ -1946,8 +2532,736 @@ function retryFailedMessage(tempId) {
   if (idx === -1) return;
   const msg = chatMessages[idx];
   chatMessages.splice(idx, 1);
-  document.getElementById('chat-input').value = msg.content;
-  sendChatMessage();
+  if ((msg.type || 'text') === 'text') {
+    document.getElementById('chat-input').value = msg.content;
+    sendChatMessage();
+  } else {
+    showToast('Pesan gagal ini perlu dikirim ulang manual (pilih file lagi)', 'error');
+    renderChatMessages();
+  }
+}
+
+// ======= LAMPIRAN CHAT ONLINE (foto/video/dokumen/audio/voice note/kontak) =======
+// Berbeda dari tab P2P (WiFi Direct, kirim langsung device-ke-device),
+// lampiran di sini diupload ke folder Google Drive lewat Apps Script
+// (action 'uploadChatFile'), lalu URL-nya disimpan sebagai pesan biasa
+// lewat 'sendMessage' — supaya riwayat chat tetap tersinkron di server.
+const CHAT_MAX_FILE_BYTES = 25 * 1024 * 1024; // samakan dengan batas di Code.gs
+
+function toggleChatAttachMenu() {
+  document.getElementById('chat-attach-menu').classList.toggle('hidden');
+}
+
+function chatAttach(kind) {
+  if (!activeChatUsername) return;
+  document.getElementById('chat-attach-menu').classList.add('hidden');
+  document.getElementById('chat-file-' + kind).click();
+}
+
+async function handleChatFileSelected(event, kind) {
+  const file = event.target.files && event.target.files[0];
+  event.target.value = ''; // reset supaya bisa pilih file yang sama lagi nanti
+  if (!file || !activeChatUsername) return;
+
+  if (file.size > CHAT_MAX_FILE_BYTES) {
+    showToast('Ukuran file maksimal 25MB', 'error');
+    return;
+  }
+
+  await uploadThenSendChatFile(file, kind, kind === 'document' ? file.name : (file.name || ''), '');
+}
+
+function showChatUploadProgress(label) {
+  const wrap = document.getElementById('chat-upload-progress-wrap');
+  const bar = document.getElementById('chat-upload-progress-bar');
+  const pct = document.getElementById('chat-upload-progress-percent');
+  document.getElementById('chat-upload-progress-label').textContent = label;
+  bar.style.width = '10%';
+  pct.textContent = '...';
+  wrap.classList.remove('hidden');
+}
+function hideChatUploadProgress() {
+  document.getElementById('chat-upload-progress-wrap').classList.add('hidden');
+  document.getElementById('chat-upload-progress-bar').style.width = '0%';
+}
+
+// duration (opsional, dipakai untuk voice note, dalam detik)
+async function uploadThenSendChatFile(file, type, displayName, duration) {
+  const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  const tempMsg = {
+    id: tempId,
+    fromUsername: currentUser.username,
+    toUsername: activeChatUsername,
+    content: '',
+    type,
+    fileUrl: URL.createObjectURL(file), // preview lokal sementara sebelum upload selesai
+    fileName: displayName || file.name || '',
+    fileSize: file.size,
+    duration: duration || '',
+    createdAt: new Date().toISOString(),
+    read: false,
+    status: 'pending'
+  };
+  chatMessages.push(tempMsg);
+  renderChatMessages();
+  scrollChatToBottom();
+  showChatUploadProgress('Mengunggah ' + (displayName || file.name || 'file') + '...');
+
+  try {
+    const base64Data = await fileToBase64(file);
+    const uploadRes = await apiPostJson('uploadChatFile', {
+      username: currentUser.username,
+      base64Data,
+      fileName: displayName || file.name || ('file_' + Date.now()),
+      mimeType: file.type || ''
+    });
+
+    if (!uploadRes.success) {
+      tempMsg.status = 'failed';
+      showToast(translateServerMsg(uploadRes.message) || 'Gagal mengunggah file', 'error');
+      renderChatMessages();
+      hideChatUploadProgress();
+      return;
+    }
+
+    document.getElementById('chat-upload-progress-bar').style.width = '90%';
+
+    const sendRes = await apiCall('sendMessage', {
+      fromUsername: currentUser.username,
+      toUsername: activeChatUsername,
+      type,
+      fileUrl: uploadRes.directUrl || uploadRes.viewUrl,
+      fileName: uploadRes.fileName || '',
+      mimeType: uploadRes.mimeType || '',
+      duration: duration || ''
+    });
+
+    if (sendRes.success) {
+      tempMsg.id = sendRes.messageId;
+      tempMsg.createdAt = sendRes.createdAt;
+      tempMsg.fileUrl = uploadRes.directUrl || uploadRes.viewUrl;
+      tempMsg.status = 'sent';
+    } else {
+      tempMsg.status = 'failed';
+      showToast(translateServerMsg(sendRes.message) || t('toast_send_fail'), 'error');
+    }
+  } catch (e) {
+    tempMsg.status = 'failed';
+    showToast('Gagal mengirim file: koneksi bermasalah', 'error');
+  }
+
+  renderChatMessages();
+  scrollChatToBottom();
+  hideChatUploadProgress();
+}
+
+// ---- Voice note (tekan & tahan tombol mic), pakai MediaRecorder browser ----
+let chatMediaRecorder = null;
+let chatRecordedChunks = [];
+let chatRecordStartTime = 0;
+let chatIsRecording = false;
+
+function updateChatInputMode() {
+  const hasText = document.getElementById('chat-input').value.trim().length > 0;
+  document.getElementById('btn-send-chat').classList.toggle('hidden', !hasText);
+  document.getElementById('chat-mic-btn').classList.toggle('hidden', hasText);
+  document.getElementById('chat-mic-btn').classList.toggle('flex', !hasText);
+}
+
+async function chatStartVoiceNote() {
+  if (chatIsRecording || !activeChatUsername) return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast('Perekaman suara tidak didukung di perangkat ini', 'error');
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    chatRecordedChunks = [];
+    chatMediaRecorder = new MediaRecorder(stream);
+    chatMediaRecorder.ondataavailable = e => { if (e.data.size > 0) chatRecordedChunks.push(e.data); };
+    chatMediaRecorder.onstop = () => {
+      stream.getTracks().forEach(tr => tr.stop());
+    };
+    chatMediaRecorder.start();
+    chatIsRecording = true;
+    chatRecordStartTime = Date.now();
+    document.getElementById('chat-mic-btn').style.background = '#EF4444';
+    showToast('Merekam... lepas untuk mengirim', 'success');
+  } catch (e) {
+    showToast('Tidak bisa mengakses mikrofon', 'error');
+  }
+}
+
+function chatCancelVoiceNoteIfRecording() {
+  // Kalau jari/kursor keluar dari tombol saat masih menekan, tetap kirim
+  // (sama seperti perilaku tekan-tahan pada umumnya) — cukup panggil stop biasa.
+  if (chatIsRecording) chatStopVoiceNote();
+}
+
+function chatStopVoiceNote() {
+  if (!chatIsRecording || !chatMediaRecorder) return;
+  chatIsRecording = false;
+  document.getElementById('chat-mic-btn').style.background = '#F3F4F6';
+  const durationSec = Math.max(1, Math.round((Date.now() - chatRecordStartTime) / 1000));
+
+  chatMediaRecorder.onstop = async (ev) => {
+    if (chatMediaRecorder.stream) chatMediaRecorder.stream.getTracks().forEach(tr => tr.stop());
+    if (!chatRecordedChunks.length) return;
+    const blob = new Blob(chatRecordedChunks, { type: chatMediaRecorder.mimeType || 'audio/webm' });
+    if (blob.size < 500) { showToast('Rekaman terlalu pendek', 'error'); return; }
+    const ext = (chatMediaRecorder.mimeType || 'audio/webm').includes('mp4') ? 'm4a' : 'webm';
+    const file = new File([blob], 'voice_' + Date.now() + '.' + ext, { type: blob.type });
+    await uploadThenSendChatFile(file, 'voice', file.name, durationSec);
+  };
+  chatMediaRecorder.stop();
+}
+
+// ---- Bagikan kontak (tanpa file, langsung JSON di kolom content) ----
+// Di dalam app native, tombol "Kontak" langsung membuka picker kontak asli
+// Android (lewat AndroidBridge.pickChatContact()) supaya user tinggal pilih
+// dari daftar kontak di HP, bukan mengetik manual. Hasilnya mengisi otomatis
+// form di bawah lewat window.onNativeContactPicked(). Di browser biasa (di
+// luar app, tanpa AndroidBridge) form tetap diisi manual seperti sebelumnya.
+function openChatContactShareModal() {
+  if (!activeChatUsername) return;
+  document.getElementById('chat-attach-menu').classList.add('hidden');
+
+  if (window.AndroidBridge && typeof window.AndroidBridge.pickChatContact === 'function') {
+    window.AndroidBridge.pickChatContact();
+    return;
+  }
+
+  document.getElementById('chat-contact-name').value = '';
+  document.getElementById('chat-contact-phone').value = '';
+  document.getElementById('chat-contact-share-modal').classList.remove('hidden');
+}
+function closeChatContactShareModal() {
+  document.getElementById('chat-contact-share-modal').classList.add('hidden');
+}
+
+// Dipanggil dari Kotlin (MainActivity.handlePickedContact) setelah user
+// memilih kontak lewat picker asli Android — mengisi otomatis lalu
+// membuka modal supaya user bisa cek/edit sebelum menekan "Kirim Kontak".
+window.onNativeContactPicked = function(name, phone) {
+  document.getElementById('chat-contact-name').value = name || '';
+  document.getElementById('chat-contact-phone').value = phone || '';
+  document.getElementById('chat-contact-share-modal').classList.remove('hidden');
+};
+
+async function sendChatContactShare() {
+  const name = document.getElementById('chat-contact-name').value.trim();
+  const phone = document.getElementById('chat-contact-phone').value.trim();
+  if (!name) { showToast('Nama kontak wajib diisi', 'error'); return; }
+  closeChatContactShareModal();
+
+  const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  const content = JSON.stringify({ name, phone });
+  const tempMsg = {
+    id: tempId,
+    fromUsername: currentUser.username,
+    toUsername: activeChatUsername,
+    content,
+    type: 'contact',
+    createdAt: new Date().toISOString(),
+    read: false,
+    status: 'pending'
+  };
+  chatMessages.push(tempMsg);
+  renderChatMessages();
+  scrollChatToBottom();
+
+  try {
+    const res = await apiCall('sendMessage', {
+      fromUsername: currentUser.username,
+      toUsername: activeChatUsername,
+      type: 'contact',
+      content
+    });
+    if (res.success) {
+      tempMsg.id = res.messageId;
+      tempMsg.createdAt = res.createdAt;
+      tempMsg.status = 'sent';
+    } else {
+      tempMsg.status = 'failed';
+      showToast(translateServerMsg(res.message) || t('toast_send_fail'), 'error');
+    }
+  } catch (e) {
+    tempMsg.status = 'failed';
+    showToast('Gagal mengirim kontak: koneksi bermasalah', 'error');
+  }
+  renderChatMessages();
+  scrollChatToBottom();
+}
+
+// ======= P2P OFFLINE MESSAGING (WiFi Direct via NativeBridge) =======
+// Jembatan antara UI web ini dan layer native Kotlin (WifiDirectManager +
+// P2pMessagingRepository + P2pFileTransferManager), diekspos lewat
+// window.AndroidBridge di NativeBridge.kt. Di luar app native (browser
+// biasa), semua fungsi ini akan menampilkan pesan "tidak didukung" karena
+// window.AndroidBridge tidak ada.
+//
+// Catatan arsitektur: file besar (foto/video/dokumen/voice note) dikirim
+// LANGSUNG lewat socket WiFi Direct ke perangkat yang terhubung (tidak lewat
+// relay multi-hop, dan tidak lewat server GAS — Apps Script/Sheets tidak
+// dirancang untuk blob besar). Hanya metadata pesan yang disinkronkan ke
+// server begitu online kembali, supaya riwayat chat tetap konsisten.
+let p2pPeers = [];              // { name, address } dari native
+let p2pConnectedAddress = null; // device address yang sedang terhubung
+let p2pQueue = [];              // antrian pesan yang belum tersinkron (tampilan)
+let p2pThreads = {};            // { username: [ {id,fromMe,type,text,fileName,mimeType,fileSize,localFilePath,status,timestamp} ] }
+let p2pIsRecording = false;
+let p2pSocketState = 'DISCONNECTED';
+
+function p2pSupported() {
+  return !!(window.AndroidBridge && typeof window.AndroidBridge.isP2pSupported === 'function' && window.AndroidBridge.isP2pSupported());
+}
+
+function initP2pTab() {
+  const dot = document.getElementById('p2p-status-dot');
+  const text = document.getElementById('p2p-status-text');
+  const scanBtn = document.getElementById('p2p-scan-btn');
+
+  if (!p2pSupported()) {
+    dot.style.background = '#9CA3AF';
+    text.textContent = 'Fitur ini hanya tersedia di aplikasi Android Pesaner';
+    scanBtn.disabled = true;
+    scanBtn.classList.add('opacity-50');
+    return;
+  }
+
+  dot.style.background = '#F59E0B';
+  text.textContent = 'Siap mencari perangkat';
+  scanBtn.disabled = false;
+  scanBtn.classList.remove('opacity-50');
+  renderP2pPeers();
+  renderP2pQueue();
+  renderP2pThread();
+  updateP2pInputMode();
+  p2pUpdateReadyState();
+}
+
+function scanP2pPeers() {
+  if (!p2pSupported()) { showToast('Fitur P2P tidak tersedia di sini', 'error'); return; }
+  document.getElementById('p2p-status-text').textContent = 'Mencari perangkat di sekitar...';
+  document.getElementById('p2p-status-dot').style.background = '#0077CC';
+  window.AndroidBridge.startP2pDiscovery();
+}
+
+// Dipanggil dari Kotlin (NativeBridge.startP2pDiscovery) setiap kali daftar
+// peer WiFi Direct berubah. peers: [{ name, address }, ...]
+window.onP2pPeersChanged = function(peers) {
+  p2pPeers = Array.isArray(peers) ? peers : [];
+  document.getElementById('p2p-status-dot').style.background = p2pPeers.length ? '#10B981' : '#F59E0B';
+  document.getElementById('p2p-status-text').textContent = p2pPeers.length
+    ? p2pPeers.length + ' perangkat ditemukan'
+    : 'Belum ada perangkat ditemukan';
+  renderP2pPeers();
+  p2pUpdateReadyState();
+};
+
+window.onP2pError = function(message) {
+  document.getElementById('p2p-status-dot').style.background = '#EF4444';
+  document.getElementById('p2p-status-text').textContent = 'Error: ' + message;
+  showToast('P2P error: ' + message, 'error');
+};
+
+window.onP2pConnectionResult = function(success, error) {
+  if (success) {
+    showToast('Terhubung ke perangkat', 'success');
+  } else {
+    p2pConnectedAddress = null;
+    showToast('Gagal terhubung: ' + (error || 'unknown'), 'error');
+  }
+  renderP2pPeers();
+  p2pUpdateReadyState();
+};
+
+function renderP2pPeers() {
+  const list = document.getElementById('p2p-peer-list');
+  const empty = document.getElementById('p2p-peer-empty');
+  if (!p2pPeers.length) {
+    list.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  list.innerHTML = p2pPeers.map(p => {
+    const connected = p.address === p2pConnectedAddress;
+    return `
+      <div class="flex items-center justify-between p-2.5 rounded-xl" style="background:#F9FAFB;">
+        <div class="min-w-0">
+          <p class="text-sm font-bold truncate">${escapeHtml(p.name || 'Perangkat tanpa nama')}</p>
+          <p class="text-[11px] text-on-surface-muted truncate">${escapeHtml(p.address)}</p>
+        </div>
+        <button onclick="connectP2pPeer('${p.address.replace(/'/g, "\\'")}')"
+          class="text-xs font-bold py-1.5 px-3 rounded-full ${connected ? '' : 'btn-primary'}"
+          style="${connected ? 'background:#ECFDF5;color:#10B981;' : ''}">
+          ${connected ? '✓ Terhubung' : 'Hubungkan'}
+        </button>
+      </div>`;
+  }).join('');
+}
+
+function connectP2pPeer(address) {
+  if (!p2pSupported()) return;
+  showToast('Menghubungkan...', 'success');
+  p2pConnectedAddress = address;
+  window.AndroidBridge.connectToP2pPeer(address);
+  renderP2pPeers();
+  p2pUpdateReadyState();
+}
+
+// ---- Recipient & thread selection ----
+// Karena WiFi Direct hanya mengenal nama/alamat perangkat (bukan username
+// Pesaner), penerima pesan tetap diketik manual — thread percakapan
+// dikelompokkan berdasarkan username yang diketik di kolom ini.
+function currentP2pRecipient() {
+  return document.getElementById('p2p-recipient-username').value.trim();
+}
+
+function onP2pRecipientChanged() {
+  renderP2pThread();
+  p2pUpdateReadyState();
+}
+
+// ---- Ready-to-send state: single source of truth for whether sending is
+// currently possible, and WHY not, shown explicitly instead of only surfacing
+// as a toast after the user already tapped send/attach/mic. ----
+function p2pUpdateReadyState() {
+  const dot = document.getElementById('p2p-ready-dot');
+  const text = document.getElementById('p2p-ready-text');
+  let recipient = currentP2pRecipient();
+
+  // Auto-strip @ if user types it, for consistency with normalizeUsername in Kotlin
+  if (recipient.startsWith('@')) {
+    recipient = recipient.substring(1);
+    document.getElementById('p2p-recipient-username').value = recipient;
+  }
+
+  const wifiConnected = !!p2pConnectedAddress;
+  const socketConnected = p2pSocketState === 'CONNECTED';
+  const ready = wifiConnected && socketConnected && !!recipient;
+
+  if (!wifiConnected) {
+    dot.style.background = '#EF4444';
+    text.textContent = 'Belum terhubung ke perangkat — tekan "Hubungkan" di daftar perangkat di atas';
+    text.style.color = '#EF4444';
+  } else if (p2pSocketState === 'CONNECTING') {
+    dot.style.background = '#F59E0B';
+    text.textContent = 'Menghubungkan jalur data (TCP)...';
+    text.style.color = '#B45309';
+  } else if (!socketConnected) {
+    dot.style.background = '#EF4444';
+    text.textContent = 'Jalur data terputus — coba hubungkan ulang perangkat';
+    text.style.color = '#EF4444';
+  } else if (!recipient) {
+    dot.style.background = '#F59E0B';
+    text.textContent = 'Terhubung — isi username penerima untuk mulai kirim';
+    text.style.color = '#B45309';
+  } else {
+    const peer = p2pPeers.find(p => p.address === p2pConnectedAddress);
+    dot.style.background = '#10B981';
+    text.textContent = 'Siap kirim ke "' + recipient + '"' + (peer ? ' via ' + peer.name : '');
+    text.style.color = '#10B981';
+  }
+
+  // Disable (rather than silently ignore) every control that requires a
+  // ready P2P link, so the user sees *why* nothing happens instead of
+  // tapping a button that quietly no-ops.
+  ['p2p-send-btn', 'p2p-attach-btn', 'p2p-mic-btn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.disabled = !ready;
+    el.classList.toggle('opacity-40', !ready);
+    el.style.pointerEvents = ready ? '' : 'none';
+  });
+  const msgInput = document.getElementById('p2p-message-text');
+  if (msgInput) {
+    msgInput.disabled = !ready;
+    msgInput.placeholder = ready ? 'Tulis pesan...' : (wifiConnected ? 'Isi username penerima dulu...' : 'Hubungkan ke perangkat dulu...');
+  }
+}
+
+window.onP2pSocketStateChanged = function(state) {
+  p2pSocketState = state;
+  p2pUpdateReadyState();
+};
+
+function ensureP2pThread(username) {
+  if (!p2pThreads[username]) p2pThreads[username] = [];
+  return p2pThreads[username];
+}
+
+function renderP2pThread() {
+  const recipient = currentP2pRecipient();
+  const wrap = document.getElementById('p2p-thread-messages');
+  const emptyTpl = '<div class="text-center py-8 text-on-surface-muted text-xs" id="p2p-thread-empty">Belum ada pesan. Isi username penerima lalu mulai kirim di bawah.</div>';
+
+  if (!recipient) { wrap.innerHTML = emptyTpl; return; }
+  const thread = p2pThreads[recipient] || [];
+  if (!thread.length) { wrap.innerHTML = emptyTpl; return; }
+
+  wrap.innerHTML = thread.map(renderP2pBubble).join('');
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function formatFileSize(bytes) {
+  if (!bytes || bytes <= 0) return '';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function p2pTypeIcon(type) {
+  return {
+    IMAGE: 'image', VIDEO: 'videocam', AUDIO: 'audiotrack',
+    VOICE_NOTE: 'mic', DOCUMENT: 'description', CONTACT: 'person'
+  }[type] || 'chat';
+}
+
+function renderP2pBubble(m) {
+  const align = m.fromMe ? 'margin-left:auto;background:#0077CC;color:#fff;' : 'margin-right:auto;background:#F3F4F6;color:#1A1D23;';
+  const time = new Date(m.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  let body = '';
+
+  if (m.type === 'TEXT') {
+    body = `<p class="text-sm">${escapeHtml(m.text)}</p>`;
+  } else if (m.type === 'CONTACT') {
+    body = `
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined">person</span>
+        <div>
+          <p class="text-sm font-bold">${escapeHtml(m.fileName || 'Kontak')}</p>
+          <p class="text-xs opacity-80" style="white-space:pre-line;">${escapeHtml(m.text)}</p>
+        </div>
+      </div>`;
+  } else if (m.type === 'IMAGE' && (m.webUrl || m.localFilePath)) {
+    const imgSrc = m.webUrl || ('file://' + m.localFilePath); // webUrl works reliably; file:// kept only as last-resort fallback
+    body = `
+      <img src="${imgSrc}" class="rounded-lg mb-1" style="max-width:200px;max-height:200px;object-fit:cover;cursor:pointer;" onclick="openP2pReceivedFile('${(m.localFilePath||'').replace(/'/g,"\\'")}','${(m.mimeType||'image/*')}')" onerror="this.style.display='none';"/>
+      ${m.text ? `<p class="text-sm">${escapeHtml(m.text)}</p>` : ''}`;
+  } else {
+    // VIDEO / AUDIO / VOICE_NOTE / DOCUMENT (or file still transferring, no localFilePath yet)
+    const icon = p2pTypeIcon(m.type);
+    const canOpen = !!m.localFilePath;
+    body = `
+      <div class="flex items-center gap-2 ${canOpen ? 'cursor-pointer' : ''}" ${canOpen ? `onclick="openP2pReceivedFile('${m.localFilePath.replace(/'/g,"\\'")}','${(m.mimeType||'')}')"` : ''}>
+        <span class="material-symbols-outlined">${icon}</span>
+        <div class="min-w-0">
+          <p class="text-sm font-bold truncate">${escapeHtml(m.fileName || (m.type === 'VOICE_NOTE' ? 'Voice note' : 'File'))}</p>
+          <p class="text-[10px] opacity-80">${m.status === 'transferring' ? 'Mengirim/menerima...' : formatFileSize(m.fileSize)}${canOpen ? ' · Ketuk untuk buka' : ''}</p>
+        </div>
+      </div>
+      ${m.text ? `<p class="text-sm mt-1">${escapeHtml(m.text)}</p>` : ''}`;
+  }
+
+  return `
+    <div style="max-width:78%;padding:8px 12px;border-radius:14px;${align}">
+      ${body}
+      <div class="text-[9px] mt-1" style="opacity:0.7;">${time}</div>
+    </div>`;
+}
+
+function openP2pReceivedFile(path, mime) {
+  if (!p2pSupported() || !path) return;
+  window.AndroidBridge.openP2pFile(path, mime || '');
+}
+
+// ---- Attachment menu ----
+function toggleP2pAttachMenu() {
+  document.getElementById('p2p-attach-menu').classList.toggle('hidden');
+}
+
+function p2pAttach(kind) {
+  const recipient = currentP2pRecipient();
+  if (!recipient) { showToast('Isi username penerima dulu', 'error'); return; }
+  if (!p2pConnectedAddress) { showToast('Hubungkan ke perangkat dulu', 'error'); return; }
+  if (!p2pSupported()) return;
+  document.getElementById('p2p-attach-menu').classList.add('hidden');
+  window.AndroidBridge.pickP2pAttachment(kind, recipient, recipient);
+}
+
+function p2pAttachContact() {
+  const recipient = currentP2pRecipient();
+  if (!recipient) { showToast('Isi username penerima dulu', 'error'); return; }
+  if (!p2pConnectedAddress) { showToast('Hubungkan ke perangkat dulu', 'error'); return; }
+  if (!p2pSupported()) return;
+  document.getElementById('p2p-attach-menu').classList.add('hidden');
+  window.AndroidBridge.pickP2pContact(recipient, recipient);
+}
+
+// Dipanggil dari Kotlin setelah file/kontak/voice note selesai dikirim (atau gagal).
+window.onP2pFileSendResult = function(success, error) {
+  hideP2pProgress();
+  if (success) {
+    showToast('Terkirim', 'success');
+  } else {
+    showToast('Gagal: ' + (error || 'unknown'), 'error');
+  }
+};
+
+// Dipanggil dari Kotlin selama transfer file berlangsung (kirim maupun terima).
+window.onP2pTransferProgress = function(p) {
+  const wrap = document.getElementById('p2p-progress-wrap');
+  const bar = document.getElementById('p2p-progress-bar');
+  const label = document.getElementById('p2p-progress-label');
+  const percentEl = document.getElementById('p2p-progress-percent');
+
+  wrap.classList.remove('hidden');
+  bar.style.width = p.percent + '%';
+  percentEl.textContent = p.percent + '%';
+  label.textContent = (p.isIncoming ? 'Menerima ' : 'Mengirim ') + p.fileName + ' (' + formatFileSize(p.totalBytes) + ')';
+
+  if (p.percent >= 100) {
+    setTimeout(hideP2pProgress, 800);
+  }
+};
+
+function hideP2pProgress() {
+  document.getElementById('p2p-progress-wrap').classList.add('hidden');
+  document.getElementById('p2p-progress-bar').style.width = '0%';
+}
+
+// ---- Voice note (tekan & tahan tombol mic) ----
+function updateP2pInputMode() {
+  const text = document.getElementById('p2p-message-text').value.trim();
+  document.getElementById('p2p-send-btn').classList.toggle('hidden', !text);
+  document.getElementById('p2p-mic-btn').classList.toggle('hidden', !!text);
+  document.getElementById('p2p-mic-btn').classList.toggle('flex', !text);
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('p2p-message-text');
+  if (el) el.addEventListener('input', updateP2pInputMode);
+});
+
+function p2pStartVoiceNote() {
+  const recipient = currentP2pRecipient();
+  if (!recipient) { showToast('Isi username penerima dulu', 'error'); return; }
+  if (!p2pConnectedAddress) { showToast('Hubungkan ke perangkat dulu', 'error'); return; }
+  if (!p2pSupported()) return;
+  p2pIsRecording = true;
+  document.getElementById('p2p-mic-btn').style.background = '#EF4444';
+  window.AndroidBridge.startP2pVoiceRecording();
+}
+
+function p2pStopVoiceNote() {
+  if (!p2pIsRecording) return;
+  p2pIsRecording = false;
+  document.getElementById('p2p-mic-btn').style.background = '#F3F4F6';
+  const recipient = currentP2pRecipient();
+  if (!p2pSupported() || !recipient) return;
+  window.AndroidBridge.stopAndSendP2pVoiceRecording(recipient, recipient);
+}
+
+window.onP2pVoiceRecordingStarted = function() {
+  showToast('Merekam... lepas untuk mengirim', 'success');
+};
+
+// ---- Send text message ----
+function sendP2pMessageUI() {
+  if (!p2pSupported()) { showToast('Fitur P2P tidak tersedia di sini', 'error'); return; }
+  const recipient = currentP2pRecipient();
+  const textEl = document.getElementById('p2p-message-text');
+  const text = textEl.value.trim();
+
+  if (!p2pConnectedAddress) { showToast('Hubungkan ke perangkat dulu', 'error'); p2pUpdateReadyState(); return; }
+  if (!recipient) { showToast('Isi username penerima', 'error'); p2pUpdateReadyState(); return; }
+  if (!text) return;
+
+  window.AndroidBridge.sendP2pMessage(recipient, recipient, text);
+
+  ensureP2pThread(recipient).push({
+    id: 'local_' + Date.now(), fromMe: true, type: 'TEXT', text,
+    timestamp: Date.now(), status: 'pending'
+  });
+  renderP2pThread();
+
+  p2pQueue.unshift({ id: 'local_' + Date.now(), to: recipient, text, status: 'pending', ts: new Date().toISOString() });
+  renderP2pQueue();
+
+  textEl.value = '';
+  updateP2pInputMode();
+}
+
+// Dipanggil dari Kotlin (P2pMessagingRepository.messageReceived, lewat
+// MainActivity) setiap kali pesan (teks/kontak/file) selesai diterima dan
+// siap ditampilkan langsung — tanpa perlu refresh manual.
+window.onP2pMessageReceived = function(msg) {
+  const thread = ensureP2pThread(msg.fromId);
+  thread.push({
+    id: msg.id, fromMe: false, type: msg.type, text: msg.text,
+    fileName: msg.fileName, mimeType: msg.mimeType, fileSize: msg.fileSize,
+    localFilePath: msg.localFilePath, webUrl: msg.webUrl, timestamp: msg.timestamp, status: 'received'
+  });
+
+  if (currentP2pRecipient() === msg.fromId) renderP2pThread();
+
+  const label = msg.type === 'TEXT' ? msg.text : (msg.fileName || msg.type);
+  showToast('Pesan baru dari ' + msg.fromName + ': ' + label, 'success');
+
+  p2pQueue.unshift({ id: 'local_' + msg.id, to: msg.fromName, text: label, status: 'pending', ts: new Date().toISOString() });
+  renderP2pQueue();
+};
+
+function renderP2pQueue() {
+  const list = document.getElementById('p2p-queue-list');
+  const empty = document.getElementById('p2p-queue-empty');
+  const countEl = document.getElementById('p2p-queue-count');
+  const pending = p2pQueue.filter(q => q.status !== 'synced');
+
+  countEl.textContent = pending.length;
+  document.getElementById('p2p-badge-side').classList.toggle('hidden', pending.length === 0);
+  document.getElementById('p2p-badge-side').textContent = pending.length;
+  document.getElementById('p2p-badge-mobile').classList.toggle('hidden', pending.length === 0);
+  document.getElementById('p2p-badge-mobile').textContent = pending.length;
+
+  if (!pending.length) {
+    list.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  list.innerHTML = pending.map(q => `
+    <div class="flex items-center justify-between p-2.5 rounded-xl" style="background:#FFFBEB;">
+      <div class="min-w-0">
+        <p class="text-xs font-bold">→ ${escapeHtml(q.to)}</p>
+        <p class="text-xs text-on-surface-muted truncate">${escapeHtml(q.text)}</p>
+      </div>
+      <span class="text-[10px] font-bold" style="color:#F59E0B;">⏳ Menunggu</span>
+    </div>`).join('');
+}
+
+// Dipanggil dari Kotlin (P2pMessagingRepository.syncRequests, lewat
+// MainActivity.evaluateJavascript) begitu perangkat online kembali dan
+// sebuah pesan offline siap disinkronkan ke server GAS. Memakai endpoint
+// 'sendMessage' yang sama dengan chat biasa supaya pesan offline muncul
+// juga di riwayat chat normal. Untuk pesan bertipe file, hanya metadata
+// yang dikirim (nama file, jenis, caption) — file binernya sendiri tetap
+// tinggal di perangkat masing-masing.
+async function syncOfflineMessage(messageId, recipientId, recipientName, text, timestamp) {
+  try {
+    const res = await apiCall('sendMessage', {
+      fromUsername: currentUser ? currentUser.username : '',
+      toUsername: recipientId,
+      content: text
+    });
+    const q = p2pQueue.find(x => x.id === 'local_' + messageId || (x.to === recipientId && x.text === text));
+    if (res && res.success) {
+      if (q) q.status = 'synced';
+      showToast('Pesan offline tersinkron ke ' + recipientId, 'success');
+    } else {
+      showToast('Gagal sinkron pesan offline', 'error');
+    }
+  } catch (e) {
+    showToast('Gagal sinkron pesan offline: koneksi bermasalah', 'error');
+  }
+  renderP2pQueue();
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str == null ? '' : String(str);
+  return d.innerHTML;
 }
 
 // ---- Modal Chat Baru (cari user) ----
@@ -2052,6 +3366,8 @@ async function toggleLike(postId) {
       const icon = btn.querySelector('.material-symbols-outlined');
       btn.classList.toggle('liked', res.liked);
       icon.classList.toggle('fill-icon', res.liked);
+      // Cache feed jadi basi (jumlah like berubah), biarkan refresh di kunjungan berikutnya
+      cacheInvalidate([userCacheKey('feed'), userCacheKey('profile_posts')]);
     }
   } catch(e) { showToast(t('toast_generic_fail'), 'error'); }
 }
@@ -2069,6 +3385,7 @@ async function deletePost(postId) {
       }
       document.getElementById('post-' + postId)?.remove();
       showToast(t('toast_post_deleted'));
+      cacheInvalidate([userCacheKey('feed'), userCacheKey('profile_posts')]);
     } else {
       showToast(translateServerMsg(res.message) || t('toast_delete_fail'), 'error');
     }
@@ -2155,6 +3472,7 @@ async function loadProfile() {
 
   document.getElementById('btn-edit-profile').classList.toggle('hidden', !isOwn);
   document.getElementById('btn-follow-user').classList.toggle('hidden', isOwn);
+  document.getElementById('btn-chat-user').classList.toggle('hidden', isOwn);
 
   if (isOwn) {
     document.getElementById('profile-name').textContent = currentUser.name || '';
@@ -2184,20 +3502,37 @@ async function loadProfile() {
       document.getElementById('profile-following-count').textContent = p.followingCount || 0;
       profileFollowState = { targetUsername, following: !!p.isFollowingByViewer };
       updateFollowButtonUi();
+      updateChatButtonUi();
     } else if (!isOwn) {
       showToast(translateServerMsg(res.message) || t('toast_user_not_found'), 'error');
     }
   } catch(e) { showToast(t('toast_profile_fail'), 'error'); }
 
-  document.getElementById('profile-posts-loading').classList.remove('hidden');
-  document.getElementById('profile-posts-container').innerHTML = '';
+  // Cache hanya dipakai untuk profil sendiri (profil orang lain jarang dibuka
+  // berulang dan datanya lebih penting selalu segar, misal status follow).
+  const cacheKey = isOwn ? userCacheKey('profile_posts') : null;
+  const cached = cacheKey ? cacheGet(cacheKey) : null;
+
+  if (cached && cached.data && cached.data.length) {
+    document.getElementById('profile-posts-count').textContent = cached.data.length;
+    renderPosts(cached.data, 'profile-posts-container');
+    document.getElementById('profile-posts-empty').classList.add('hidden');
+    document.getElementById('profile-posts-loading').classList.add('hidden');
+  } else {
+    document.getElementById('profile-posts-loading').classList.remove('hidden');
+    document.getElementById('profile-posts-container').innerHTML = '';
+  }
+
   try {
     const res = await apiCall('getUserPosts', { username: targetUsername, viewerUsername: currentUser.username });
     const posts = res.posts || [];
     document.getElementById('profile-posts-count').textContent = posts.length;
     renderPosts(posts, 'profile-posts-container');
     document.getElementById('profile-posts-empty').classList.toggle('hidden', posts.length > 0);
-  } catch(e) { showToast(t('toast_profile_fail'), 'error'); }
+    if (cacheKey) cacheSet(cacheKey, posts);
+  } catch(e) {
+    if (!cached) showToast(t('toast_profile_fail'), 'error');
+  }
   document.getElementById('profile-posts-loading').classList.add('hidden');
 }
 
@@ -2215,6 +3550,26 @@ function updateFollowButtonUi() {
   }
 }
 
+// Tombol shortcut chat di profil hanya aktif kalau viewer sudah follow
+// user yang sedang dilihat profilnya. Dipanggil ulang setiap kali status
+// follow berubah (baik saat load profil maupun setelah toggle follow).
+function updateChatButtonUi() {
+  const btn = document.getElementById('btn-chat-user');
+  const canChat = !!profileFollowState.following;
+  btn.disabled = !canChat;
+  btn.classList.toggle('opacity-40', !canChat);
+  btn.classList.toggle('cursor-not-allowed', !canChat);
+  btn.title = canChat ? '' : 'Follow user ini dulu untuk mengirim chat';
+}
+
+// Dipanggil dari tombol "Chat" di halaman profil. Hanya membuka thread
+// chat kalau viewer memang sudah follow target (tombolnya sendiri sudah
+// disabled kalau belum follow, ini cek tambahan untuk jaga-jaga).
+function openChatWithProfileUser() {
+  if (!profileFollowState.following || !profileFollowState.targetUsername) return;
+  openChatThreadByUsername(profileFollowState.targetUsername);
+}
+
 async function toggleFollowUser() {
   const target = profileFollowState.targetUsername;
   if (!target) return;
@@ -2226,6 +3581,7 @@ async function toggleFollowUser() {
       profileFollowState.following = res.following;
       document.getElementById('profile-followers-count').textContent = res.followersCount || 0;
       updateFollowButtonUi();
+      updateChatButtonUi();
       showToast(res.following ? t('toast_now_following') : t('toast_now_unfollowed'));
     } else {
       showToast(translateServerMsg(res.message) || t('toast_generic_fail'), 'error');
@@ -2385,6 +3741,14 @@ function closeWaStatusModal() {
   document.getElementById('wa-status-modal').classList.add('hidden');
 }
 
+function moodLabel(mood) {
+  const key = 'wa_mood_' + mood;
+  const translated = t(key);
+  if (translated !== key) return translated;
+  const meta = MOOD_META[mood];
+  return (meta && meta.label) || mood;
+}
+
 function renderMoodGrid() {
   const grid = document.getElementById('mood-grid');
   const moods = Object.keys(PINER_IMAGES);
@@ -2396,7 +3760,7 @@ function renderMoodGrid() {
       <div style="width:72px;height:72px;border-radius:12px;background:${meta.bg};overflow:hidden;display:flex;align-items:flex-end;justify-content:center;">
         <img src="${PINER_IMAGES[mood]}" style="width:100%;height:100%;object-fit:contain;object-position:bottom center;" />
       </div>
-      <span style="font-size:11px;font-weight:700;text-align:center;line-height:1.2;">${meta.emoji} ${meta.label}</span>
+      <span style="font-size:11px;font-weight:700;text-align:center;line-height:1.2;">${meta.emoji} ${moodLabel(mood)}</span>
     </button>`;
   }).join('');
 }
@@ -2418,7 +3782,7 @@ function waGoStep2() {
   const meta = MOOD_META[waSelectedMood] || { label: waSelectedMood, emoji: '' };
   document.getElementById('wa-step-1').classList.add('hidden');
   document.getElementById('wa-step-2').classList.remove('hidden');
-  document.getElementById('wa-selected-mood-label').textContent = meta.emoji + ' ' + meta.label;
+  document.getElementById('wa-selected-mood-label').textContent = meta.emoji + ' ' + moodLabel(waSelectedMood);
   document.getElementById('wa-text-main').value = '';
   document.getElementById('wa-text-sub').value = '';
   waSelectedPostDate = null;
@@ -2444,7 +3808,7 @@ async function loadUserPostsForWa() {
   const emptyMsg = document.getElementById('wa-post-picker-empty');
   waUserPosts = [];
   searchInput.value = '';
-  searchInput.placeholder = 'Memuat post kamu...';
+  searchInput.placeholder = t('wa_pick_post_loading');
   searchInput.disabled = true;
   hideWaPostDropdown();
   try {
@@ -2454,7 +3818,7 @@ async function loadUserPostsForWa() {
   } catch (e) {
     showToast(t('toast_myposts_fail'), 'error');
   }
-  searchInput.placeholder = 'Cari post kamu...';
+  searchInput.placeholder = t('wa_pick_post_ph');
   searchInput.disabled = false;
 }
 
@@ -2765,7 +4129,7 @@ async function shareWaStatus() {
     const meta = MOOD_META[waSelectedMood] || { label: waSelectedMood };
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
-        await navigator.share({ files: [file], title: 'Status WA Mood', text: `Mood: ${meta.label}` });
+        await navigator.share({ files: [file], title: 'Status WA Mood', text: `Mood: ${moodLabel(waSelectedMood)}` });
       } catch(e) {
         if (e.name !== 'AbortError') downloadWaStatus();
       }
@@ -2793,6 +4157,17 @@ function finEmptyData() {
 }
 
 // Ambil seluruh data keuangan user yang sedang login dari server.
+// fromCache=true berarti hanya mengisi finData dari localStorage kalau ada,
+// tanpa memanggil server (dipakai untuk render instan sebelum refresh).
+function finLoadFromCache() {
+  const cached = cacheGet(userCacheKey('finance'));
+  if (cached && cached.data) {
+    finData = cached.data;
+    return true;
+  }
+  return false;
+}
+
 async function finLoadData() {
   if (!currentUser) { finData = finEmptyData(); return; }
   finLoading = true;
@@ -2805,13 +4180,14 @@ async function finLoadData() {
         target: res.target || [],
         transaksi: res.transaksi || []
       };
+      cacheSet(userCacheKey('finance'), finData);
     } else {
-      finData = finEmptyData();
+      if (!finData) finData = finEmptyData();
       showToast(translateServerMsg(res.message) || 'Gagal memuat data keuangan', 'error');
     }
   } catch (e) {
-    finData = finEmptyData();
-    showToast('Gagal terhubung ke server', 'error');
+    if (!finData) finData = finEmptyData();
+    showToast(t('fin_toast_server_fail'), 'error');
   } finally {
     finLoading = false;
   }
@@ -2863,7 +4239,16 @@ function finCatColor(nama) {
 
 async function loadFinance() {
   const container = document.getElementById('finance-page');
-  if (container) container.classList.add('opacity-50', 'pointer-events-none');
+  const hadCache = finLoadFromCache();
+
+  if (hadCache) {
+    // 1. Tampilkan cache dulu, instan, tanpa mengunci layar
+    renderFinanceAll();
+  } else if (container) {
+    container.classList.add('opacity-50', 'pointer-events-none');
+  }
+
+  // 2. Refresh di belakang layar
   await finLoadData();
   if (container) container.classList.remove('opacity-50', 'pointer-events-none');
   renderFinanceAll();
@@ -2883,7 +4268,7 @@ function renderFinanceDashboard() {
   document.getElementById('fin-expense-total').textContent = finFormatRp(s.expenseThisMonth);
 
   const target = s.activeTarget;
-  document.getElementById('fin-target-nominal').textContent = target ? finFormatRp(target.nominalTarget) : 'Belum ada target';
+  document.getElementById('fin-target-nominal').textContent = target ? finFormatRp(target.nominalTarget) : t('fin_no_target');
   const progress = Math.max(0, Math.min(100, s.progress || 0));
   document.getElementById('fin-progress-percent').textContent = Math.round(progress) + '%';
   const circumference = 339.3;
@@ -2899,7 +4284,7 @@ function renderFinanceDashboard() {
   const ctx = canvas.getContext('2d');
   if (finPieChart) finPieChart.destroy();
   if (labels.length === 0) {
-    document.getElementById('fin-pie-legend').innerHTML = '<p class="text-xs text-on-surface-muted">Belum ada pengeluaran bulan ini.</p>';
+    document.getElementById('fin-pie-legend').innerHTML = `<p class="text-xs text-on-surface-muted">${t('fin_no_expense_this_month')}</p>`;
   } else if (typeof Chart !== 'undefined') {
     finPieChart = new Chart(ctx, {
       type: 'doughnut',
@@ -2918,7 +4303,7 @@ function renderFinanceDashboard() {
 function renderFinanceTargetSwitcher() {
   const sel = document.getElementById('fin-target-switcher');
   if (finData.target.length === 0) {
-    sel.innerHTML = '<option>Belum ada target</option>';
+    sel.innerHTML = `<option>${t('fin_no_target')}</option>`;
     sel.onchange = null;
     return;
   }
@@ -2932,7 +4317,7 @@ function renderFinanceTargetSwitcher() {
     try {
       await apiCall('setActiveFinanceTarget', { username: currentUser.username, id });
     } catch (e) {
-      showToast('Gagal menyimpan target aktif', 'error');
+      showToast(t('fin_toast_fail_active_target'), 'error');
     }
   };
 }
@@ -2967,7 +4352,8 @@ function renderFinanceTxList() {
 
 function finFormatDate(d) {
   const date = new Date(d);
-  return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+  const locale = currentLang === 'en' ? 'en-US' : 'id-ID';
+  return date.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 /* ---------- Modal: Transaksi ---------- */
@@ -2982,13 +4368,13 @@ function finPopulateKategoriSelect(type) {
   const sel = document.getElementById('fin-tx-kategori');
   const opts = finData.kategori.filter(k => k.tipe === type);
   sel.innerHTML = opts.map(k => `<option value="${escHtml(k.nama)}">${escHtml(k.nama)}</option>`).join('')
-    || '<option value="">Belum ada kategori</option>';
+    || `<option value="">${t('fin_no_kategori')}</option>`;
 }
 
 function finPopulateAkunSelect() {
   const sel = document.getElementById('fin-tx-akun');
   sel.innerHTML = finData.akun.map(a => `<option value="${escHtml(a.nama)}">${escHtml(a.nama)} (${a.jenisAset})</option>`).join('')
-    || '<option value="">Belum ada akun</option>';
+    || `<option value="">${t('fin_no_akun')}</option>`;
 }
 
 function openFinanceTxModal(id) {
@@ -3028,7 +4414,7 @@ async function saveFinanceTx() {
   const akun = document.getElementById('fin-tx-akun').value;
 
   if (!tanggal || !nominal || nominal <= 0 || !kategori || !akun) {
-    showToast('Lengkapi semua data transaksi.', 'error');
+    showToast(t('fin_toast_incomplete_tx'), 'error');
     return;
   }
   try {
@@ -3036,14 +4422,14 @@ async function saveFinanceTx() {
       username: currentUser.username, id, tanggal, deskripsi, nominal, kategori, akun, tipe: finTxType
     });
     if (!res.success) {
-      showToast(translateServerMsg(res.message) || 'Gagal menyimpan transaksi.', 'error');
+      showToast(translateServerMsg(res.message) || t('fin_toast_save_tx_fail'), 'error');
       return;
     }
     closeFinanceTxModal();
     await loadFinance();
-    showToast('Transaksi disimpan.');
+    showToast(t('fin_toast_tx_saved'));
   } catch (e) {
-    showToast('Gagal terhubung ke server', 'error');
+    showToast(t('fin_toast_server_fail'), 'error');
   }
 }
 
@@ -3053,14 +4439,14 @@ async function deleteFinanceTx() {
   try {
     const res = await apiCall('deleteFinanceTx', { username: currentUser.username, id });
     if (!res.success) {
-      showToast(translateServerMsg(res.message) || 'Gagal menghapus transaksi.', 'error');
+      showToast(translateServerMsg(res.message) || t('fin_toast_delete_tx_fail'), 'error');
       return;
     }
     closeFinanceTxModal();
     await loadFinance();
-    showToast('Transaksi dihapus.');
+    showToast(t('fin_toast_tx_deleted'));
   } catch (e) {
-    showToast('Gagal terhubung ke server', 'error');
+    showToast(t('fin_toast_server_fail'), 'error');
   }
 }
 
@@ -3069,7 +4455,7 @@ let finMasterMode = 'target';
 
 function openFinanceMasterModal(mode) {
   finMasterMode = mode;
-  const titles = { target: 'Kelola Target', kategori: 'Kelola Kategori', akun: 'Kelola Akun' };
+  const titles = { target: t('fin_manage_target'), kategori: t('fin_manage_category'), akun: t('fin_manage_account') };
   document.getElementById('fin-master-title').textContent = titles[mode];
   ['target', 'kategori', 'akun'].forEach(m => {
     document.getElementById('fin-master-form-' + m).classList.toggle('hidden', m !== mode);
@@ -3104,17 +4490,17 @@ function finResetMasterForm() {
 function renderFinanceMasterList() {
   const container = document.getElementById('fin-master-list');
   if (finMasterMode === 'target') {
-    container.innerHTML = finData.target.map(t => `
+    container.innerHTML = finData.target.map(tg => `
       <div class="flex items-center justify-between text-sm border border-gray-100 rounded-lg px-3 py-2">
         <div class="min-w-0">
-          <p class="font-semibold truncate">${escHtml(t.nama)} ${t.status === 'Aktif' ? '<span class=\\"text-[10px] text-primary font-bold\\">(Aktif)</span>' : ''}</p>
-          <p class="text-xs text-on-surface-muted tabular-nums">${finFormatRp(t.nominalTarget)}</p>
+          <p class="font-semibold truncate">${escHtml(tg.nama)} ${tg.status === 'Aktif' ? `<span class=\\"text-[10px] text-primary font-bold\\">(${t('fin_active_badge')})</span>` : ''}</p>
+          <p class="text-xs text-on-surface-muted tabular-nums">${finFormatRp(tg.nominalTarget)}</p>
         </div>
         <div class="flex gap-1 shrink-0">
-          <button onclick="editFinanceTarget('${t.id}')" class="text-primary"><span class="material-symbols-outlined text-lg">edit</span></button>
-          <button onclick="deleteFinanceTarget('${t.id}')" class="text-red-500"><span class="material-symbols-outlined text-lg">delete</span></button>
+          <button onclick="editFinanceTarget('${tg.id}')" class="text-primary"><span class="material-symbols-outlined text-lg">edit</span></button>
+          <button onclick="deleteFinanceTarget('${tg.id}')" class="text-red-500"><span class="material-symbols-outlined text-lg">delete</span></button>
         </div>
-      </div>`).join('') || '<p class="text-xs text-on-surface-muted">Belum ada target.</p>';
+      </div>`).join('') || `<p class="text-xs text-on-surface-muted">${t('fin_empty_target')}</p>`;
   } else if (finMasterMode === 'kategori') {
     container.innerHTML = finData.kategori.map(k => `
       <div class="flex items-center justify-between text-sm border border-gray-100 rounded-lg px-3 py-2">
@@ -3126,7 +4512,7 @@ function renderFinanceMasterList() {
           <button onclick="editFinanceKategori('${k.id}')" class="text-primary"><span class="material-symbols-outlined text-lg">edit</span></button>
           <button onclick="deleteFinanceKategori('${k.id}')" class="text-red-500"><span class="material-symbols-outlined text-lg">delete</span></button>
         </div>
-      </div>`).join('') || '<p class="text-xs text-on-surface-muted">Belum ada kategori.</p>';
+      </div>`).join('') || `<p class="text-xs text-on-surface-muted">${t('fin_empty_kategori')}</p>`;
   } else if (finMasterMode === 'akun') {
     container.innerHTML = finData.akun.map(a => `
       <div class="flex items-center justify-between text-sm border border-gray-100 rounded-lg px-3 py-2">
@@ -3138,7 +4524,7 @@ function renderFinanceMasterList() {
           <button onclick="editFinanceAkun('${a.id}')" class="text-primary"><span class="material-symbols-outlined text-lg">edit</span></button>
           <button onclick="deleteFinanceAkun('${a.id}')" class="text-red-500"><span class="material-symbols-outlined text-lg">delete</span></button>
         </div>
-      </div>`).join('') || '<p class="text-xs text-on-surface-muted">Belum ada akun.</p>';
+      </div>`).join('') || `<p class="text-xs text-on-surface-muted">${t('fin_empty_akun')}</p>`;
   }
 }
 
@@ -3148,21 +4534,21 @@ async function saveFinanceTarget() {
   const nama = document.getElementById('fin-target-nama-input').value.trim();
   const nominalTarget = Number(document.getElementById('fin-target-nominal-input').value);
   if (!nama || !nominalTarget || nominalTarget <= 0) {
-    showToast('Isi nama dan nominal target dengan benar.', 'error');
+    showToast(t('fin_toast_invalid_target'), 'error');
     return;
   }
   try {
     const res = await apiCall('saveFinanceTarget', { username: currentUser.username, id, nama, nominalTarget });
     if (!res.success) {
-      showToast(translateServerMsg(res.message) || 'Gagal menyimpan target.', 'error');
+      showToast(translateServerMsg(res.message) || t('fin_toast_save_target_fail'), 'error');
       return;
     }
     await finLoadData();
     renderFinanceMasterList();
     finResetMasterForm();
-    showToast('Target disimpan.');
+    showToast(t('fin_toast_target_saved'));
   } catch (e) {
-    showToast('Gagal terhubung ke server', 'error');
+    showToast(t('fin_toast_server_fail'), 'error');
   }
 }
 function editFinanceTarget(id) {
@@ -3176,14 +4562,14 @@ async function deleteFinanceTarget(id) {
   try {
     const res = await apiCall('deleteFinanceTarget', { username: currentUser.username, id });
     if (!res.success) {
-      showToast(translateServerMsg(res.message) || 'Gagal menghapus target.', 'error');
+      showToast(translateServerMsg(res.message) || t('fin_toast_delete_target_fail'), 'error');
       return;
     }
     await finLoadData();
     renderFinanceMasterList();
-    showToast('Target dihapus.');
+    showToast(t('fin_toast_target_deleted'));
   } catch (e) {
-    showToast('Gagal terhubung ke server', 'error');
+    showToast(t('fin_toast_server_fail'), 'error');
   }
 }
 
@@ -3194,21 +4580,21 @@ async function saveFinanceKategori() {
   const tipe = document.getElementById('fin-kategori-tipe-input').value;
   const warna = document.getElementById('fin-kategori-warna-input').value;
   if (!nama) {
-    showToast('Isi nama kategori.', 'error');
+    showToast(t('fin_toast_invalid_kategori'), 'error');
     return;
   }
   try {
     const res = await apiCall('saveFinanceCategory', { username: currentUser.username, id, nama, tipe, warna });
     if (!res.success) {
-      showToast(translateServerMsg(res.message) || 'Gagal menyimpan kategori.', 'error');
+      showToast(translateServerMsg(res.message) || t('fin_toast_save_kategori_fail'), 'error');
       return;
     }
     await finLoadData();
     renderFinanceMasterList();
     finResetMasterForm();
-    showToast('Kategori disimpan.');
+    showToast(t('fin_toast_kategori_saved'));
   } catch (e) {
-    showToast('Gagal terhubung ke server', 'error');
+    showToast(t('fin_toast_server_fail'), 'error');
   }
 }
 function editFinanceKategori(id) {
@@ -3223,14 +4609,14 @@ async function deleteFinanceKategori(id) {
   try {
     const res = await apiCall('deleteFinanceCategory', { username: currentUser.username, id });
     if (!res.success) {
-      showToast(translateServerMsg(res.message) || 'Gagal menghapus kategori.', 'error');
+      showToast(translateServerMsg(res.message) || t('fin_toast_delete_kategori_fail'), 'error');
       return;
     }
     await finLoadData();
     renderFinanceMasterList();
-    showToast('Kategori dihapus.');
+    showToast(t('fin_toast_kategori_deleted'));
   } catch (e) {
-    showToast('Gagal terhubung ke server', 'error');
+    showToast(t('fin_toast_server_fail'), 'error');
   }
 }
 
@@ -3240,21 +4626,21 @@ async function saveFinanceAkun() {
   const nama = document.getElementById('fin-akun-nama-input').value.trim();
   const jenisAset = document.getElementById('fin-akun-jenis-input').value;
   if (!nama) {
-    showToast('Isi nama akun.', 'error');
+    showToast(t('fin_toast_invalid_akun'), 'error');
     return;
   }
   try {
     const res = await apiCall('saveFinanceAccount', { username: currentUser.username, id, nama, jenisAset });
     if (!res.success) {
-      showToast(translateServerMsg(res.message) || 'Gagal menyimpan akun.', 'error');
+      showToast(translateServerMsg(res.message) || t('fin_toast_save_akun_fail'), 'error');
       return;
     }
     await finLoadData();
     renderFinanceMasterList();
     finResetMasterForm();
-    showToast('Akun disimpan.');
+    showToast(t('fin_toast_akun_saved'));
   } catch (e) {
-    showToast('Gagal terhubung ke server', 'error');
+    showToast(t('fin_toast_server_fail'), 'error');
   }
 }
 function editFinanceAkun(id) {
@@ -3268,14 +4654,14 @@ async function deleteFinanceAkun(id) {
   try {
     const res = await apiCall('deleteFinanceAccount', { username: currentUser.username, id });
     if (!res.success) {
-      showToast(translateServerMsg(res.message) || 'Gagal menghapus akun.', 'error');
+      showToast(translateServerMsg(res.message) || t('fin_toast_delete_akun_fail'), 'error');
       return;
     }
     await finLoadData();
     renderFinanceMasterList();
-    showToast('Akun dihapus.');
+    showToast(t('fin_toast_akun_deleted'));
   } catch (e) {
-    showToast('Gagal terhubung ke server', 'error');
+    showToast(t('fin_toast_server_fail'), 'error');
   }
 }
 

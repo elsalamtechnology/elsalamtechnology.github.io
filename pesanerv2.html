@@ -332,9 +332,12 @@
       <div id="tab-chat" class="hidden max-w-[600px] mx-auto px-3 py-6">
         <!-- List View -->
         <div id="chat-list-view">
-          <div class="flex justify-between items-center mb-4">
+          <div class="flex justify-between items-center mb-4 gap-2">
             <h2 class="text-xl font-black text-on-surface" data-i18n="chat_title">Pesan</h2>
-            <button onclick="openNewChatModal()" class="btn-primary text-sm py-2 px-4" data-i18n="btn_new_chat">+ Chat Baru</button>
+            <div class="flex gap-2 flex-shrink-0">
+              <button onclick="openNewGroupModal()" class="btn-outline text-sm py-2 px-3">+ Grup</button>
+              <button onclick="openNewChatModal()" class="btn-primary text-sm py-2 px-4" data-i18n="btn_new_chat">+ Chat Baru</button>
+            </div>
           </div>
           <div id="chat-list-loading" class="flex justify-center py-10"><div class="spinner"></div></div>
           <div id="chat-list-container" class="space-y-1"></div>
@@ -410,6 +413,67 @@
             <button id="chat-mic-btn" onmousedown="chatStartVoiceNote()" ontouchstart="chatStartVoiceNote(); event.preventDefault();" onmouseup="chatStopVoiceNote()" onmouseleave="chatCancelVoiceNoteIfRecording()" ontouchend="chatStopVoiceNote(); event.preventDefault();" class="hidden items-center justify-center rounded-full flex-shrink-0" style="width:38px;height:38px;background:#F3F4F6;margin-bottom:2px;">
               <span class="material-symbols-outlined text-lg">mic</span>
             </button>
+          </div>
+        </div>
+
+        <!-- Group Thread View -->
+        <div id="group-thread-view" class="hidden">
+          <div class="flex items-center gap-3 mb-4 pb-3 border-b border-gray-100">
+            <button onclick="backToChatList()" class="p-1.5 rounded-full hover:bg-gray-100">
+              <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <div class="avatar w-9 h-9 flex items-center justify-center flex-shrink-0" style="background:#0077CC;color:#fff;cursor:pointer;" onclick="openGroupMembersModal()">
+              <span class="material-symbols-outlined" style="font-size:20px;">groups</span>
+            </div>
+            <div class="flex-1 min-w-0 cursor-pointer" onclick="openGroupMembersModal()">
+              <p id="group-thread-name" class="font-bold text-sm truncate"></p>
+              <p id="group-thread-member-count" class="text-xs text-on-surface-muted truncate"></p>
+            </div>
+          </div>
+          <div id="group-messages-loading" class="flex justify-center py-6"><div class="spinner"></div></div>
+          <button id="btn-load-more-group" onclick="loadMoreGroupMessages()" class="hidden btn-outline text-xs py-1.5 px-4 mx-auto block mb-3">Muat pesan sebelumnya</button>
+          <div id="group-messages" class="flex flex-col gap-2 pb-4" style="min-height:200px;"></div>
+
+          <div id="group-upload-progress-wrap" class="hidden sticky bottom-[52px] bg-bg pb-1">
+            <div class="flex justify-between text-[10px] text-on-surface-muted mb-1">
+              <span id="group-upload-progress-label">Mengunggah...</span>
+              <span id="group-upload-progress-percent">0%</span>
+            </div>
+            <div style="height:6px;background:#E5E7EB;border-radius:999px;overflow:hidden;">
+              <div id="group-upload-progress-bar" style="height:100%;width:0%;background:#0077CC;border-radius:999px;transition:width 0.2s;"></div>
+            </div>
+          </div>
+
+          <div id="group-attach-menu" class="hidden sticky bottom-[52px] bg-bg grid grid-cols-4 gap-2 px-1 pb-2 pt-2" style="border-top:1px solid #F3F4F6;">
+            <button onclick="groupAttach('image')" class="flex flex-col items-center gap-1 py-2 rounded-xl" style="background:#F9FAFB;">
+              <span class="material-symbols-outlined" style="color:#0077CC;">image</span>
+              <span class="text-[10px] font-semibold">Foto</span>
+            </button>
+            <button onclick="groupAttach('video')" class="flex flex-col items-center gap-1 py-2 rounded-xl" style="background:#F9FAFB;">
+              <span class="material-symbols-outlined" style="color:#7C3AED;">videocam</span>
+              <span class="text-[10px] font-semibold">Video</span>
+            </button>
+            <button onclick="groupAttach('document')" class="flex flex-col items-center gap-1 py-2 rounded-xl" style="background:#F9FAFB;">
+              <span class="material-symbols-outlined" style="color:#DC2626;">description</span>
+              <span class="text-[10px] font-semibold">Dokumen</span>
+            </button>
+            <button onclick="groupAttach('audio')" class="flex flex-col items-center gap-1 py-2 rounded-xl" style="background:#F9FAFB;">
+              <span class="material-symbols-outlined" style="color:#059669;">audiotrack</span>
+              <span class="text-[10px] font-semibold">Audio</span>
+            </button>
+          </div>
+
+          <input type="file" id="group-file-image" accept="image/*" class="hidden" onchange="handleGroupFileSelected(event,'image')"/>
+          <input type="file" id="group-file-video" accept="video/*" class="hidden" onchange="handleGroupFileSelected(event,'video')"/>
+          <input type="file" id="group-file-document" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar" class="hidden" onchange="handleGroupFileSelected(event,'document')"/>
+          <input type="file" id="group-file-audio" accept="audio/*" class="hidden" onchange="handleGroupFileSelected(event,'audio')"/>
+
+          <div class="sticky bottom-0 bg-bg pt-2 pb-2 flex gap-2 items-end">
+            <button onclick="toggleGroupAttachMenu()" class="flex items-center justify-center rounded-full flex-shrink-0" style="width:38px;height:38px;background:#F3F4F6;margin-bottom:2px;">
+              <span class="material-symbols-outlined text-lg">add</span>
+            </button>
+            <textarea id="group-input" rows="1" placeholder="Tulis pesan..." style="resize:none; max-height:100px;" onkeydown="handleGroupInputKeydown(event)"></textarea>
+            <button onclick="sendGroupChatMessage()" class="btn-primary text-sm py-2.5 px-4 flex-shrink-0">Kirim</button>
           </div>
         </div>
       </div>
@@ -585,8 +649,28 @@
         <!-- Recipient -->
         <div class="card p-4 mb-4">
           <p class="font-bold text-sm mb-2">Kirim Ke</p>
-          <input type="text" id="p2p-recipient-username" placeholder="Username penerima di Pesaner" class="text-sm" autocapitalize="none" autocorrect="off" spellcheck="false"
-            oninput="onP2pRecipientChanged()" onblur="this.value = this.value.trim(); onP2pRecipientChanged();"/>
+
+          <!-- Locked state: ditampilkan setelah user memilih salah satu hasil
+               pencarian, supaya tidak sengaja terhapus tombol Hapus/Backspace. -->
+          <div id="p2p-recipient-locked" class="hidden flex items-center justify-between gap-2 p-2 rounded-xl" style="background:#EFF6FF;border:1px solid #BFDBFE;">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="material-symbols-outlined" style="color:#0077CC;">person</span>
+              <div class="min-w-0">
+                <p class="font-bold text-sm truncate" id="p2p-recipient-locked-name"></p>
+                <p class="text-xs text-on-surface-muted truncate" id="p2p-recipient-locked-username"></p>
+              </div>
+            </div>
+            <button type="button" onclick="unlockP2pRecipient()" class="text-xs font-bold flex-shrink-0" style="color:#0077CC;">Ganti</button>
+          </div>
+
+          <!-- Search/input state -->
+          <div id="p2p-recipient-input-wrap" style="position:relative;">
+            <input type="text" id="p2p-recipient-username" placeholder="Ketik min. 3 huruf username penerima" class="text-sm" autocapitalize="none" autocorrect="off" spellcheck="false"
+              oninput="onP2pRecipientChanged()" onblur="onP2pRecipientBlur()"/>
+            <div id="p2p-recipient-suggestions" class="hidden" style="position:absolute; left:0; right:0; top:100%; margin-top:4px; background:#fff; border:1px solid #E5E7EB; border-radius:12px; box-shadow:0 4px 14px rgba(0,0,0,0.10); max-height:220px; overflow-y:auto; z-index:30;"></div>
+            <button type="button" id="p2p-recipient-cancel-btn" onclick="cancelP2pRecipientChange()" class="hidden text-xs font-bold mt-1.5" style="color:#6B7280;">Batal, pakai penerima sebelumnya</button>
+          </div>
+
           <p class="text-[11px] text-on-surface-muted mt-2">Harus sudah terhubung ke minimal satu perangkat di atas (lihat status koneksi).</p>
           <!-- Ready-to-send indicator: replaces guesswork with an explicit state so the
                user always knows exactly why the send/attach controls are disabled. -->
@@ -917,6 +1001,7 @@
       <img id="post-modal-avatar" src="" class="avatar w-10 h-10 mt-0.5"/>
       <textarea id="post-content" rows="4" placeholder="Apa yang ingin kamu bagikan hari ini?" data-i18n-placeholder="post_modal_ph"></textarea>
     </div>
+    <p class="text-xs text-on-surface-muted mb-3" style="margin-top:-8px" data-i18n="post_modal_yt_hint">Tempel link YouTube di teks untuk otomatis di-embed sebagai video yang bisa diputar.</p>
     <div class="flex justify-between items-center mb-3">
       <span class="text-xs font-semibold text-on-surface-muted" data-i18n="post_privacy_label">Privasi post:</span>
       <div class="flex gap-2">
@@ -1033,6 +1118,56 @@
     <div id="new-chat-loading" class="hidden flex justify-center py-6"><div class="spinner"></div></div>
     <div id="new-chat-results" class="mt-3 space-y-1 max-h-72 overflow-y-auto"></div>
     <div id="new-chat-empty" class="hidden text-center py-8 text-on-surface-muted text-sm" data-i18n="chat_no_user_found">Tidak ada user ditemukan.</div>
+  </div>
+</div>
+
+<!-- Buat Grup Modal -->
+<div id="new-group-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeNewGroupModal()">
+  <div class="modal">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-black text-lg">Buat Grup Baru</h3>
+      <button onclick="closeNewGroupModal()" class="text-on-surface-muted hover:text-on-surface p-1 rounded-full">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <input type="text" id="new-group-name" placeholder="Nama grup" autocomplete="off" class="mb-3"/>
+    <input type="text" id="new-group-search" placeholder="Cari nama atau username untuk ditambahkan..." autocomplete="off" oninput="searchNewGroupUsers()"/>
+    <div id="new-group-loading" class="hidden flex justify-center py-4"><div class="spinner"></div></div>
+    <div id="new-group-results" class="mt-2 space-y-1 max-h-40 overflow-y-auto"></div>
+    <div id="new-group-selected-wrap" class="hidden mt-3">
+      <p class="text-xs font-bold text-on-surface-muted mb-1.5">Anggota terpilih</p>
+      <div id="new-group-selected" class="flex flex-wrap gap-1.5"></div>
+    </div>
+    <div class="flex justify-end gap-2 mt-4">
+      <button onclick="closeNewGroupModal()" class="btn-outline text-sm">Batal</button>
+      <button onclick="submitCreateGroup()" id="btn-create-group" class="btn-primary text-sm">Buat Grup</button>
+    </div>
+    <div id="new-group-submit-loading" class="hidden flex justify-center mt-3"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<!-- Anggota Grup Modal -->
+<div id="group-members-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeGroupMembersModal()">
+  <div class="modal">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-black text-lg" id="group-members-title">Anggota Grup</h3>
+      <button onclick="closeGroupMembersModal()" class="text-on-surface-muted hover:text-on-surface p-1 rounded-full">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div id="group-members-loading" class="flex justify-center py-6"><div class="spinner"></div></div>
+    <div id="group-members-list" class="space-y-1 max-h-64 overflow-y-auto"></div>
+
+    <div class="mt-3 pt-3" style="border-top:1px solid #F3F4F6;">
+      <p class="text-xs font-bold text-on-surface-muted mb-1.5">Tambah anggota</p>
+      <input type="text" id="group-add-member-search" placeholder="Cari nama atau username..." autocomplete="off" oninput="searchGroupAddMember()"/>
+      <div id="group-add-member-results" class="mt-1.5 space-y-1 max-h-32 overflow-y-auto"></div>
+    </div>
+
+    <div class="flex justify-between items-center mt-4 pt-3" style="border-top:1px solid #F3F4F6;">
+      <button onclick="confirmLeaveGroup()" class="text-sm font-bold" style="color:#EF4444;">Keluar dari grup</button>
+      <button onclick="closeGroupMembersModal()" class="btn-outline text-sm">Tutup</button>
+    </div>
   </div>
 </div>
 
@@ -1174,6 +1309,7 @@ const I18N = {
     wa_text_pos: 'Posisi teks:', wa_pos_top: 'Atas', wa_pos_bottom: 'Bawah',
     wa_save_image: 'Simpan Gambar', wa_share_wa: 'Bagikan ke WA',
     post_modal_title: 'Buat Post Baru', post_modal_ph: 'Apa yang ingin kamu bagikan hari ini?',
+    post_modal_yt_hint: 'Tempel link YouTube di teks untuk otomatis di-embed sebagai video yang bisa diputar.',
     post_privacy_label: 'Privasi post:', btn_post_submit: 'Posting',
     sm_unknown_action: 'Aksi tidak dikenal', sm_account_created: 'Akun berhasil dibuat',
     sm_note_deleted: 'Catatan dihapus', sm_note_updated: 'Catatan diperbarui', sm_note_saved: 'Catatan disimpan',
@@ -1277,6 +1413,7 @@ const I18N = {
     wa_text_pos: 'Text position:', wa_pos_top: 'Top', wa_pos_bottom: 'Bottom',
     wa_save_image: 'Save Image', wa_share_wa: 'Share to WA',
     post_modal_title: 'Create New Post', post_modal_ph: "What's on your mind today?",
+    post_modal_yt_hint: 'Paste a YouTube link in the text to auto-embed it as a playable video.',
     post_privacy_label: 'Post privacy:', btn_post_submit: 'Post',
     sm_unknown_action: 'Unknown action', sm_account_created: 'Account created successfully',
     sm_note_deleted: 'Entry deleted', sm_note_updated: 'Entry updated', sm_note_saved: 'Entry saved',
@@ -1870,7 +2007,7 @@ function contactButtonsRow(p) {
 }
 
 function postCard(p) {
-  const av = avatarUrl(p.authorName);
+  const av = resolveAvatarUrl({ name: p.authorName, avatarUrl: p.authorAvatarUrl });
   const liked = p.likedBy && p.likedBy.includes(currentUser.username);
   const isOwner = p.authorUsername === currentUser.username || currentUser.role === 'admin';
   const isPrivate = p.privacy === 'private';
@@ -1894,6 +2031,7 @@ function postCard(p) {
           </button>` : ''}
         </div>
         <p class="text-sm mt-1 mb-3 leading-relaxed">${linkifyContent(p.content)}</p>
+        ${youtubeEmbedHtml(p.content)}
         <div class="flex gap-1 items-center">
           <button onclick="toggleLike('${p.id}')" class="action-btn ${liked?'liked':''}">
             <span class="material-symbols-outlined ${liked?'fill-icon':''}" style="font-size:18px">favorite</span>
@@ -1927,6 +2065,54 @@ function linkifyContent(str) {
     }
     return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="post-link" onclick="event.stopPropagation()">${match}</a>${trailing}`;
   });
+}
+
+// Deteksi link YouTube di dalam teks post dan ambil video ID-nya (mendukung
+// youtube.com/watch?v=, youtu.be/, youtube.com/shorts/, dan youtube.com/embed/)
+function extractYoutubeId(content) {
+  if (!content) return null;
+  const re = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
+  const m = String(content).match(re);
+  return m ? m[1] : null;
+}
+
+// Bangun HTML embed player YouTube (responsive, 16:9) untuk ditampilkan di feed.
+// Pakai klik-untuk-putar (lazy activate) berbasis thumbnail: lebih ringan, dan kalau
+// videonya memang tidak bisa di-embed oleh pemiliknya (mis. Error 153), tautan
+// "Tonton di YouTube" tetap tersedia sebagai fallback.
+function youtubeEmbedHtml(content) {
+  const videoId = extractYoutubeId(content);
+  if (!videoId) return '';
+  const uid = 'yt-' + videoId + '-' + Math.random().toString(36).slice(2, 8);
+  return `<div id="${uid}" class="yt-embed-wrap" style="position:relative;width:100%;padding-top:56.25%;margin:8px 0;border-radius:12px;overflow:hidden;background:#000;cursor:pointer;"
+      onclick="event.stopPropagation(); playYoutubeEmbed('${uid}', '${videoId}')">
+    <img src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" alt="YouTube thumbnail"
+      style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;"
+      onerror="this.style.display='none'"/>
+    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;">
+      <div style="width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;">
+        <span class="material-symbols-outlined" style="font-size:34px;color:#fff;">play_arrow</span>
+      </div>
+    </div>
+    <a href="https://www.youtube.com/watch?v=${videoId}" target="_blank" rel="noopener noreferrer"
+      onclick="event.stopPropagation()"
+      style="position:absolute;bottom:8px;right:10px;font-size:11px;color:#fff;background:rgba(0,0,0,0.55);padding:3px 8px;border-radius:6px;text-decoration:none;">
+      Tonton di YouTube
+    </a>
+  </div>`;
+}
+
+// Ganti thumbnail dengan iframe player asli saat diklik (lazy-load embed).
+function playYoutubeEmbed(wrapId, videoId) {
+  const wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  wrap.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1"
+      style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
+      title="YouTube video player"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      referrerpolicy="strict-origin-when-cross-origin"
+      allowfullscreen
+      loading="lazy"></iframe>`;
 }
 
 // ======= POST MODAL =======
@@ -2198,6 +2384,17 @@ let chatMessages = [];
 let chatHasMoreOlder = false;
 const CHAT_PAGE_SIZE = 30;
 
+// ---- Grup ----
+let groupListPollInterval = null;
+let groupThreadPollInterval = null;
+let activeGroupId = null;
+let activeGroupName = null;
+let groupMessages = [];
+let groupHasMoreOlder = false;
+let newGroupSelectedMembers = []; // [{username, name}]
+let newGroupSearchTimeout = null;
+let groupAddMemberSearchTimeout = null;
+
 function startChatBadgePolling() {
   updateChatBadge();
   if (chatBadgePollInterval) clearInterval(chatBadgePollInterval);
@@ -2209,8 +2406,13 @@ let lastKnownUnreadTotal = 0;
 async function updateChatBadge() {
   if (!currentUser) return;
   try {
-    const res = await apiCall('getConversations', { username: currentUser.username });
-    const total = (res.conversations || []).reduce((s, c) => s + (c.unread || 0), 0);
+    const [convRes, groupRes] = await Promise.all([
+      apiCall('getConversations', { username: currentUser.username }),
+      apiCall('getGroups', { username: currentUser.username }).catch(() => ({ groups: [] }))
+    ]);
+    const convTotal = (convRes.conversations || []).reduce((s, c) => s + (c.unread || 0), 0);
+    const groupTotal = (groupRes.groups || []).reduce((s, g) => s + (g.unread || 0), 0);
+    const total = convTotal + groupTotal;
 
     // Kalau total unread bertambah dibanding sebelumnya, artinya ada pesan
     // baru masuk (dari percakapan mana pun, bahkan saat user tidak sedang
@@ -2237,15 +2439,21 @@ function stopChatThreadPolling() {
   if (chatThreadPollInterval) { clearInterval(chatThreadPollInterval); chatThreadPollInterval = null; }
   activeChatUsername = null;
 }
+function stopGroupThreadPolling() {
+  if (groupThreadPollInterval) { clearInterval(groupThreadPollInterval); groupThreadPollInterval = null; }
+  activeGroupId = null;
+}
 function stopChatListPolling() {
   if (chatListPollInterval) { clearInterval(chatListPollInterval); chatListPollInterval = null; }
 }
 
-// ---- List percakapan ----
+// ---- List percakapan (personal + grup digabung, diurutkan berdasarkan waktu terakhir) ----
 function openChatList() {
   stopChatThreadPolling();
+  stopGroupThreadPolling();
   document.getElementById('chat-list-view').classList.remove('hidden');
   document.getElementById('chat-thread-view').classList.add('hidden');
+  document.getElementById('group-thread-view').classList.add('hidden');
   loadChatList();
   if (chatListPollInterval) clearInterval(chatListPollInterval);
   chatListPollInterval = setInterval(loadChatList, 10000);
@@ -2257,22 +2465,43 @@ async function loadChatList() {
   const empty = document.getElementById('chat-list-empty');
   if (!container.dataset.loaded) loading.classList.remove('hidden');
   try {
-    const res = await apiCall('getConversations', { username: currentUser.username });
-    const list = res.conversations || [];
+    const [convRes, groupRes] = await Promise.all([
+      apiCall('getConversations', { username: currentUser.username }),
+      apiCall('getGroups', { username: currentUser.username }).catch(() => ({ groups: [] }))
+    ]);
+    const conversations = (convRes.conversations || []).map(c => Object.assign({ kind: 'user' }, c));
+    const groups = (groupRes.groups || []).map(g => Object.assign({ kind: 'group' }, g));
+    const list = conversations.concat(groups).sort((a, b) => new Date(b.lastAt || 0) - new Date(a.lastAt || 0));
+
     container.dataset.loaded = '1';
     empty.classList.toggle('hidden', list.length > 0);
-    container.innerHTML = list.map(c => {
-      const preview = (c.lastFromMe ? 'Kamu: ' : '') + (c.lastMessage.length > 40 ? c.lastMessage.slice(0, 40) + '…' : c.lastMessage);
-      return `<div class="chat-list-item" onclick="openChatThread('${c.username}', '${escHtml(c.name).replace(/'/g,"\\'")}')">
-        <img src="${avatarUrl(c.name)}" class="avatar w-12 h-12 flex-shrink-0"/>
+    container.innerHTML = list.map(item => {
+      const preview = (item.lastFromMe ? 'Kamu: ' : '') + ((item.lastMessage || '').length > 40 ? item.lastMessage.slice(0, 40) + '…' : (item.lastMessage || 'Belum ada pesan'));
+      if (item.kind === 'group') {
+        return `<div class="chat-list-item" onclick="openGroupThread('${item.id}', '${escHtml(item.name).replace(/'/g,"\\'")}')">
+          <div class="avatar w-12 h-12 flex-shrink-0 flex items-center justify-center" style="background:#0077CC;color:#fff;">
+            <span class="material-symbols-outlined">groups</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex justify-between items-baseline gap-2">
+              <p class="font-bold text-sm truncate">${escHtml(item.name)} <span class="text-[10px] font-normal text-on-surface-muted">· Grup</span></p>
+              <span class="text-[11px] text-on-surface-muted flex-shrink-0">${item.lastAt ? timeAgo(item.lastAt) : ''}</span>
+            </div>
+            <p class="text-xs ${item.unread > 0 ? 'text-on-surface font-semibold' : 'text-on-surface-muted'} truncate">${escHtml(preview)}</p>
+          </div>
+          ${item.unread > 0 ? `<span class="chat-unread-badge">${item.unread > 99 ? '99+' : item.unread}</span>` : ''}
+        </div>`;
+      }
+      return `<div class="chat-list-item" onclick="openChatThread('${item.username}', '${escHtml(item.name).replace(/'/g,"\\'")}', '${escHtml(item.avatarUrl||'').replace(/'/g,"\\'")}')">
+        <img src="${resolveAvatarUrl({ name: item.name, avatarUrl: item.avatarUrl })}" class="avatar w-12 h-12 flex-shrink-0"/>
         <div class="flex-1 min-w-0">
           <div class="flex justify-between items-baseline gap-2">
-            <p class="font-bold text-sm truncate">${escHtml(c.name)}</p>
-            <span class="text-[11px] text-on-surface-muted flex-shrink-0">${c.lastAt ? timeAgo(c.lastAt) : ''}</span>
+            <p class="font-bold text-sm truncate">${escHtml(item.name)}</p>
+            <span class="text-[11px] text-on-surface-muted flex-shrink-0">${item.lastAt ? timeAgo(item.lastAt) : ''}</span>
           </div>
-          <p class="text-xs ${c.unread > 0 ? 'text-on-surface font-semibold' : 'text-on-surface-muted'} truncate">${escHtml(preview)}</p>
+          <p class="text-xs ${item.unread > 0 ? 'text-on-surface font-semibold' : 'text-on-surface-muted'} truncate">${escHtml(preview)}</p>
         </div>
-        ${c.unread > 0 ? `<span class="chat-unread-badge">${c.unread > 99 ? '99+' : c.unread}</span>` : ''}
+        ${item.unread > 0 ? `<span class="chat-unread-badge">${item.unread > 99 ? '99+' : item.unread}</span>` : ''}
       </div>`;
     }).join('');
   } catch (e) {
@@ -2282,8 +2511,9 @@ async function loadChatList() {
 }
 
 // ---- Thread percakapan ----
-function openChatThread(username, name) {
+function openChatThread(username, name, avUrl) {
   stopChatListPolling();
+  stopGroupThreadPolling();
   activeChatUsername = username;
   activeChatName = name;
   chatMessages = [];
@@ -2291,7 +2521,7 @@ function openChatThread(username, name) {
 
   document.getElementById('chat-list-view').classList.add('hidden');
   document.getElementById('chat-thread-view').classList.remove('hidden');
-  document.getElementById('chat-thread-avatar').src = avatarUrl(name);
+  document.getElementById('chat-thread-avatar').src = resolveAvatarUrl({ name, avatarUrl: avUrl });
   document.getElementById('chat-thread-name').textContent = name;
   document.getElementById('chat-thread-username').textContent = '@' + username;
   document.getElementById('chat-thread-avatar').onclick = () => viewUserProfile(username);
@@ -2319,11 +2549,15 @@ async function openChatThreadByUsername(username) {
   if (!currentUser) return; // sesi belum siap, akan dicoba lagi lewat pendingOpenChatUsername di native
   switchTab('chat');
   let name = username;
+  let avUrl = '';
   try {
     const res = await apiCall('getUserProfile', { username, viewerUsername: currentUser.username });
-    if (res.success && res.profile) name = res.profile.name || username;
+    if (res.success && res.profile) {
+      name = res.profile.name || username;
+      avUrl = res.profile.avatarUrl || '';
+    }
   } catch(e) { /* pakai username sebagai fallback nama */ }
-  openChatThread(username, name);
+  openChatThread(username, name, avUrl);
 }
 
 async function loadChatThread(scrollToBottom) {
@@ -2454,18 +2688,30 @@ function chatBubbleContent(m) {
   }
 
   if (type === 'video') {
-    return `<video controls preload="metadata" style="max-width:220px;max-height:280px;border-radius:12px;display:block;">
-      <source src="${escHtml(m.fileUrl)}">
-    </video>${m.content ? `<div class="mt-1.5">${linkifyContent(m.content)}</div>` : ''}`;
+    // Video dibuka lewat halaman viewer resmi Google Drive (bukan tag <video>
+    // atau iframe custom) — lihat komentar di uploadChatFile() pada Code.gs
+    // untuk alasan lengkapnya. Halaman itu punya pemutar sendiri + tombol
+    // unduh, jadi selalu ada jalan keluar walau pemutaran gagal.
+    return `<a href="${escHtml(m.fileUrl)}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2" style="text-decoration:none;color:inherit;">
+      <span class="material-symbols-outlined" style="font-size:28px;">movie</span>
+      <div class="min-w-0">
+        <div class="text-xs font-bold truncate" style="max-width:160px;">${escHtml(m.fileName || 'Video')}</div>
+        <div class="text-[11px] opacity-80">${m.fileSize ? formatFileSize(Number(m.fileSize)) : ''} · Ketuk untuk buka/unduh</div>
+      </div>
+    </a>${m.content ? `<div class="mt-1.5">${linkifyContent(m.content)}</div>` : ''}`;
   }
 
   if (type === 'audio' || type === 'voice') {
     const label = type === 'voice' ? '🎤 Pesan Suara' : '🎵 ' + (m.fileName || 'Audio');
     const dur = m.duration ? ` · ${m.duration}s` : '';
-    return `<div class="text-xs font-bold mb-1">${label}${dur}</div>
-      <audio controls preload="metadata" style="max-width:220px;height:36px;">
-        <source src="${escHtml(m.fileUrl)}">
-      </audio>`;
+    // Sama seperti video di atas: dibuka lewat halaman viewer Drive.
+    return `<a href="${escHtml(m.fileUrl)}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2" style="text-decoration:none;color:inherit;">
+      <span class="material-symbols-outlined" style="font-size:28px;">audio_file</span>
+      <div class="min-w-0">
+        <div class="text-xs font-bold truncate" style="max-width:160px;">${label}</div>
+        <div class="text-[11px] opacity-80">${dur ? dur.replace(' · ', '') : ''}${dur ? ' · ' : ''}Ketuk untuk buka/unduh</div>
+      </div>
+    </a>`;
   }
 
   if (type === 'document') {
@@ -2519,6 +2765,455 @@ function renderChatMessages() {
 function scrollChatToBottom() {
   const container = document.getElementById('chat-messages');
   container.scrollTop = container.scrollHeight;
+}
+
+// ======= GRUP CHAT =======
+const GROUP_MAX_FILE_BYTES = 25 * 1024 * 1024; // samakan dengan batas di Code.gs
+
+function openGroupThread(groupId, name) {
+  stopChatListPolling();
+  stopChatThreadPolling();
+  activeGroupId = groupId;
+  activeGroupName = name;
+  groupMessages = [];
+  groupHasMoreOlder = false;
+
+  document.getElementById('chat-list-view').classList.add('hidden');
+  document.getElementById('chat-thread-view').classList.add('hidden');
+  document.getElementById('group-thread-view').classList.remove('hidden');
+  document.getElementById('group-thread-name').textContent = name;
+  document.getElementById('group-thread-member-count').textContent = '';
+  document.getElementById('group-messages').innerHTML = '';
+  document.getElementById('group-input').value = '';
+
+  loadGroupThread(true);
+  apiCall('getGroupInfo', { groupId }).then(res => {
+    if (res.success) document.getElementById('group-thread-member-count').textContent = res.group.members.length + ' anggota';
+  }).catch(() => {});
+  apiCall('markGroupRead', { groupId, username: currentUser.username }).catch(() => {});
+
+  if (groupThreadPollInterval) clearInterval(groupThreadPollInterval);
+  groupThreadPollInterval = setInterval(pollNewGroupMessages, 4000);
+}
+
+async function loadGroupThread(scrollToBottom) {
+  const loading = document.getElementById('group-messages-loading');
+  loading.classList.remove('hidden');
+  try {
+    const res = await apiCall('getGroupMessages', { groupId: activeGroupId, username: currentUser.username, offset: 0, limit: CHAT_PAGE_SIZE });
+    if (!res.success) {
+      showToast(translateServerMsg(res.message) || 'Gagal memuat pesan grup', 'error');
+    } else {
+      groupMessages = (res.messages || []).map(m => Object.assign({ status: 'sent' }, m));
+      groupHasMoreOlder = !!res.hasMore;
+      renderGroupMessages();
+      document.getElementById('btn-load-more-group').classList.toggle('hidden', !groupHasMoreOlder);
+      if (scrollToBottom) scrollGroupToBottom();
+    }
+  } catch (e) {
+    showToast(t('toast_msgs_fail'), 'error');
+  }
+  loading.classList.add('hidden');
+}
+
+async function loadMoreGroupMessages() {
+  const btn = document.getElementById('btn-load-more-group');
+  btn.disabled = true;
+  btn.textContent = 'Memuat...';
+  try {
+    const res = await apiCall('getGroupMessages', { groupId: activeGroupId, username: currentUser.username, offset: groupMessages.length, limit: CHAT_PAGE_SIZE });
+    const older = (res.messages || []).map(m => Object.assign({ status: 'sent' }, m));
+    groupMessages = older.concat(groupMessages);
+    groupHasMoreOlder = !!res.hasMore;
+    const container = document.getElementById('group-messages');
+    const prevHeight = container.scrollHeight;
+    renderGroupMessages();
+    container.scrollTop = container.scrollHeight - prevHeight;
+    btn.classList.toggle('hidden', !groupHasMoreOlder);
+  } catch (e) {
+    showToast(t('toast_msgs_more_fail'), 'error');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Muat pesan sebelumnya';
+}
+
+async function pollNewGroupMessages() {
+  if (!activeGroupId) return;
+  try {
+    const res = await apiCall('getGroupMessages', { groupId: activeGroupId, username: currentUser.username, offset: 0, limit: CHAT_PAGE_SIZE });
+    const latest = res.messages || [];
+    const knownIds = new Set(groupMessages.map(m => m.id));
+    const newOnes = latest.filter(m => !knownIds.has(m.id)).map(m => Object.assign({ status: 'sent' }, m));
+    if (newOnes.length) {
+      groupMessages = groupMessages.concat(newOnes);
+      renderGroupMessages();
+      scrollGroupToBottom();
+      const incoming = newOnes.some(m => m.fromUsername !== currentUser.username);
+      if (incoming) {
+        playChatNotificationSound();
+        apiCall('markGroupRead', { groupId: activeGroupId, username: currentUser.username }).catch(() => {});
+        updateChatBadge();
+      }
+    }
+  } catch (e) { /* polling diam-diam */ }
+}
+
+function scrollGroupToBottom() {
+  const container = document.getElementById('group-messages');
+  container.scrollTop = container.scrollHeight;
+}
+
+function handleGroupInputKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendGroupChatMessage();
+  }
+}
+
+// Isi bubble pesan grup: dipakai chatBubbleContent yang sama (media/text/dll),
+// tapi ditambah label nama pengirim di atas bubble untuk pesan masuk, karena
+// grup punya lebih dari satu lawan bicara.
+function renderGroupMessages() {
+  const container = document.getElementById('group-messages');
+  container.innerHTML = groupMessages.map(m => {
+    const isMe = m.fromUsername === currentUser.username;
+    const type = m.type || 'text';
+    const mediaTypes = ['image', 'video', 'document', 'audio', 'voice', 'contact'];
+    const bubbleClass = mediaTypes.includes(type) ? ' media' : '';
+    return `<div class="chat-bubble-row ${isMe ? 'me' : 'them'}">
+      <div class="chat-bubble-wrap">
+        ${!isMe ? `<p class="text-[11px] font-bold mb-0.5 px-1" style="color:#0077CC;">${escHtml(m.fromName || m.fromUsername)}</p>` : ''}
+        <div class="chat-bubble ${isMe ? 'me' : 'them'}${bubbleClass}">${chatBubbleContent(m)}</div>
+        <div class="chat-bubble-time ${isMe ? 'me' : 'them'}">
+          <span>${formatDateTime(m.createdAt)}</span>
+          ${isMe ? chatStatusHtml(m) : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function sendGroupChatMessage() {
+  const input = document.getElementById('group-input');
+  const content = input.value.trim();
+  if (!content || !activeGroupId) return;
+  if (content.length > 1000) { showToast(t('toast_max_1000'), 'error'); return; }
+
+  input.value = '';
+  const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  const tempMsg = {
+    id: tempId,
+    groupId: activeGroupId,
+    fromUsername: currentUser.username,
+    fromName: currentUser.name,
+    content,
+    createdAt: new Date().toISOString(),
+    status: 'pending'
+  };
+  groupMessages.push(tempMsg);
+  renderGroupMessages();
+  scrollGroupToBottom();
+
+  try {
+    const res = await apiCall('sendGroupMessage', { groupId: activeGroupId, fromUsername: currentUser.username, content });
+    if (res.success) {
+      tempMsg.id = res.messageId;
+      tempMsg.createdAt = res.createdAt;
+      tempMsg.status = 'sent';
+    } else {
+      tempMsg.status = 'failed';
+      showToast(translateServerMsg(res.message) || t('toast_send_fail'), 'error');
+    }
+  } catch (e) {
+    tempMsg.status = 'failed';
+    showToast(t('toast_send_fail'), 'error');
+  }
+  renderGroupMessages();
+  input.focus();
+}
+
+// ---- Lampiran chat grup (sama seperti chat personal: upload ke Drive lewat uploadChatFile, lalu kirim pesannya) ----
+function toggleGroupAttachMenu() {
+  document.getElementById('group-attach-menu').classList.toggle('hidden');
+}
+
+function groupAttach(kind) {
+  if (!activeGroupId) return;
+  document.getElementById('group-attach-menu').classList.add('hidden');
+  document.getElementById('group-file-' + kind).click();
+}
+
+async function handleGroupFileSelected(event, kind) {
+  const file = event.target.files && event.target.files[0];
+  event.target.value = '';
+  if (!file || !activeGroupId) return;
+
+  if (file.size > GROUP_MAX_FILE_BYTES) {
+    showToast('Ukuran file maksimal 25MB', 'error');
+    return;
+  }
+
+  await uploadThenSendGroupFile(file, kind, file.name || '');
+}
+
+function showGroupUploadProgress(label) {
+  const wrap = document.getElementById('group-upload-progress-wrap');
+  const bar = document.getElementById('group-upload-progress-bar');
+  const pct = document.getElementById('group-upload-progress-percent');
+  document.getElementById('group-upload-progress-label').textContent = label;
+  bar.style.width = '10%';
+  pct.textContent = '...';
+  wrap.classList.remove('hidden');
+}
+function hideGroupUploadProgress() {
+  document.getElementById('group-upload-progress-wrap').classList.add('hidden');
+  document.getElementById('group-upload-progress-bar').style.width = '0%';
+}
+
+async function uploadThenSendGroupFile(file, type, displayName) {
+  const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  const tempMsg = {
+    id: tempId,
+    groupId: activeGroupId,
+    fromUsername: currentUser.username,
+    fromName: currentUser.name,
+    content: '',
+    type,
+    fileUrl: URL.createObjectURL(file),
+    fileName: displayName || file.name || '',
+    fileSize: file.size,
+    createdAt: new Date().toISOString(),
+    status: 'pending'
+  };
+  groupMessages.push(tempMsg);
+  renderGroupMessages();
+  scrollGroupToBottom();
+  showGroupUploadProgress('Mengunggah ' + (displayName || file.name || 'file') + '...');
+
+  try {
+    const base64Data = await fileToBase64(file);
+    const uploadRes = await apiPostJson('uploadChatFile', {
+      username: currentUser.username,
+      base64Data,
+      fileName: displayName || file.name || ('file_' + Date.now()),
+      mimeType: file.type || ''
+    });
+
+    if (!uploadRes.success) {
+      tempMsg.status = 'failed';
+      showToast(translateServerMsg(uploadRes.message) || 'Gagal mengunggah file', 'error');
+      renderGroupMessages();
+      hideGroupUploadProgress();
+      return;
+    }
+
+    document.getElementById('group-upload-progress-bar').style.width = '90%';
+
+    const sendRes = await apiCall('sendGroupMessage', {
+      groupId: activeGroupId,
+      fromUsername: currentUser.username,
+      type,
+      fileUrl: uploadRes.directUrl || uploadRes.viewUrl,
+      fileName: uploadRes.fileName || '',
+      mimeType: uploadRes.mimeType || '',
+      fileSize: uploadRes.size || file.size
+    });
+
+    if (sendRes.success) {
+      tempMsg.id = sendRes.messageId;
+      tempMsg.createdAt = sendRes.createdAt;
+      tempMsg.fileUrl = uploadRes.directUrl || uploadRes.viewUrl;
+      tempMsg.status = 'sent';
+    } else {
+      tempMsg.status = 'failed';
+      showToast(translateServerMsg(sendRes.message) || t('toast_send_fail'), 'error');
+    }
+  } catch (e) {
+    tempMsg.status = 'failed';
+    showToast('Gagal mengunggah file', 'error');
+  }
+  renderGroupMessages();
+  hideGroupUploadProgress();
+}
+
+// ---- Buat Grup ----
+function openNewGroupModal() {
+  document.getElementById('new-group-name').value = '';
+  document.getElementById('new-group-search').value = '';
+  document.getElementById('new-group-results').innerHTML = '';
+  newGroupSelectedMembers = [];
+  renderNewGroupSelected();
+  document.getElementById('new-group-modal').classList.remove('hidden');
+}
+function closeNewGroupModal() {
+  document.getElementById('new-group-modal').classList.add('hidden');
+}
+
+function searchNewGroupUsers() {
+  const query = document.getElementById('new-group-search').value.trim();
+  clearTimeout(newGroupSearchTimeout);
+  if (query.length < 3) { document.getElementById('new-group-results').innerHTML = ''; return; }
+  newGroupSearchTimeout = setTimeout(async () => {
+    const loading = document.getElementById('new-group-loading');
+    const results = document.getElementById('new-group-results');
+    loading.classList.remove('hidden');
+    try {
+      const res = await apiCall('searchUsers', { query, excludeUsername: currentUser.username });
+      const users = (res.users || []).filter(u => !newGroupSelectedMembers.some(s => s.username === u.username));
+      results.innerHTML = users.map(u => `
+        <div class="chat-list-item" style="cursor:pointer;" onclick="addGroupMemberToSelection('${escHtml(u.username).replace(/'/g,"\\'")}', '${escHtml(u.name).replace(/'/g,"\\'")}')">
+          <img src="${resolveAvatarUrl({ name: u.name, avatarUrl: u.avatarUrl })}" class="avatar w-9 h-9 flex-shrink-0"/>
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-sm truncate">${escHtml(u.name)}</p>
+            <p class="text-xs text-on-surface-muted truncate">@${escHtml(u.username)}</p>
+          </div>
+          <span class="material-symbols-outlined" style="color:#0077CC;">add_circle</span>
+        </div>`).join('');
+    } catch (e) { /* diamkan */ }
+    loading.classList.add('hidden');
+  }, 300);
+}
+
+function addGroupMemberToSelection(username, name) {
+  if (newGroupSelectedMembers.some(s => s.username === username)) return;
+  newGroupSelectedMembers.push({ username, name });
+  document.getElementById('new-group-search').value = '';
+  document.getElementById('new-group-results').innerHTML = '';
+  renderNewGroupSelected();
+}
+
+function removeGroupMemberFromSelection(username) {
+  newGroupSelectedMembers = newGroupSelectedMembers.filter(s => s.username !== username);
+  renderNewGroupSelected();
+}
+
+function renderNewGroupSelected() {
+  const wrap = document.getElementById('new-group-selected-wrap');
+  const box = document.getElementById('new-group-selected');
+  wrap.classList.toggle('hidden', newGroupSelectedMembers.length === 0);
+  box.innerHTML = newGroupSelectedMembers.map(s => `
+    <span class="text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1" style="background:#EFF6FF;color:#0077CC;">
+      ${escHtml(s.name)}
+      <span class="material-symbols-outlined" style="font-size:14px;cursor:pointer;" onclick="removeGroupMemberFromSelection('${escHtml(s.username).replace(/'/g,"\\'")}')">close</span>
+    </span>`).join('');
+}
+
+async function submitCreateGroup() {
+  const name = document.getElementById('new-group-name').value.trim();
+  if (!name) { showToast('Nama grup wajib diisi', 'error'); return; }
+  if (newGroupSelectedMembers.length < 1) { showToast('Pilih minimal 1 anggota', 'error'); return; }
+
+  const btn = document.getElementById('btn-create-group');
+  btn.disabled = true;
+  document.getElementById('new-group-submit-loading').classList.remove('hidden');
+  try {
+    const res = await apiCall('createGroup', {
+      creatorUsername: currentUser.username,
+      name,
+      members: newGroupSelectedMembers.map(s => s.username).join(',')
+    });
+    if (res.success) {
+      closeNewGroupModal();
+      showToast('Grup dibuat', 'success');
+      openGroupThread(res.group.id, res.group.name);
+      loadChatList();
+    } else {
+      showToast(translateServerMsg(res.message) || 'Gagal membuat grup', 'error');
+    }
+  } catch (e) {
+    showToast('Gagal membuat grup', 'error');
+  }
+  btn.disabled = false;
+  document.getElementById('new-group-submit-loading').classList.add('hidden');
+}
+
+// ---- Anggota Grup ----
+function openGroupMembersModal() {
+  if (!activeGroupId) return;
+  document.getElementById('group-members-title').textContent = activeGroupName || 'Anggota Grup';
+  document.getElementById('group-add-member-search').value = '';
+  document.getElementById('group-add-member-results').innerHTML = '';
+  document.getElementById('group-members-modal').classList.remove('hidden');
+  loadGroupMembers();
+}
+function closeGroupMembersModal() {
+  document.getElementById('group-members-modal').classList.add('hidden');
+}
+
+async function loadGroupMembers() {
+  const loading = document.getElementById('group-members-loading');
+  const list = document.getElementById('group-members-list');
+  loading.classList.remove('hidden');
+  list.innerHTML = '';
+  try {
+    const res = await apiCall('getGroupInfo', { groupId: activeGroupId });
+    if (res.success) {
+      document.getElementById('group-thread-member-count').textContent = res.group.members.length + ' anggota';
+      list.innerHTML = res.group.members.map(m => `
+        <div class="chat-list-item">
+          <img src="${resolveAvatarUrl({ name: m.name, avatarUrl: m.avatarUrl })}" class="avatar w-9 h-9 flex-shrink-0"/>
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-sm truncate">${escHtml(m.name)}${m.username === currentUser.username ? ' (Kamu)' : ''}</p>
+            <p class="text-xs text-on-surface-muted truncate">@${escHtml(m.username)}</p>
+          </div>
+        </div>`).join('');
+    }
+  } catch (e) { /* diamkan */ }
+  loading.classList.add('hidden');
+}
+
+function searchGroupAddMember() {
+  const query = document.getElementById('group-add-member-search').value.trim();
+  clearTimeout(groupAddMemberSearchTimeout);
+  const results = document.getElementById('group-add-member-results');
+  if (query.length < 3) { results.innerHTML = ''; return; }
+  groupAddMemberSearchTimeout = setTimeout(async () => {
+    try {
+      const res = await apiCall('searchUsers', { query, excludeUsername: currentUser.username });
+      results.innerHTML = (res.users || []).map(u => `
+        <div class="chat-list-item" style="cursor:pointer;" onclick="addMemberToGroupNow('${escHtml(u.username).replace(/'/g,"\\'")}')">
+          <img src="${resolveAvatarUrl({ name: u.name, avatarUrl: u.avatarUrl })}" class="avatar w-8 h-8 flex-shrink-0"/>
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-xs truncate">${escHtml(u.name)}</p>
+            <p class="text-[11px] text-on-surface-muted truncate">@${escHtml(u.username)}</p>
+          </div>
+          <span class="material-symbols-outlined" style="color:#0077CC;font-size:20px;">add_circle</span>
+        </div>`).join('');
+    } catch (e) { /* diamkan */ }
+  }, 300);
+}
+
+async function addMemberToGroupNow(newMember) {
+  try {
+    const res = await apiCall('addGroupMember', { groupId: activeGroupId, username: currentUser.username, newMember });
+    if (res.success) {
+      showToast('Anggota ditambahkan', 'success');
+      document.getElementById('group-add-member-search').value = '';
+      document.getElementById('group-add-member-results').innerHTML = '';
+      loadGroupMembers();
+    } else {
+      showToast(translateServerMsg(res.message) || 'Gagal menambah anggota', 'error');
+    }
+  } catch (e) {
+    showToast('Gagal menambah anggota', 'error');
+  }
+}
+
+async function confirmLeaveGroup() {
+  if (!activeGroupId) return;
+  if (!confirm('Yakin ingin keluar dari grup "' + activeGroupName + '"?')) return;
+  try {
+    const res = await apiCall('leaveGroup', { groupId: activeGroupId, username: currentUser.username });
+    if (res.success) {
+      showToast('Kamu keluar dari grup', 'success');
+      closeGroupMembersModal();
+      backToChatList();
+    } else {
+      showToast(translateServerMsg(res.message) || 'Gagal keluar grup', 'error');
+    }
+  } catch (e) {
+    showToast('Gagal keluar grup', 'error');
+  }
 }
 
 function handleChatInputKeydown(e) {
@@ -2955,14 +3650,109 @@ function connectP2pPeer(address) {
 // ---- Recipient & thread selection ----
 // Karena WiFi Direct hanya mengenal nama/alamat perangkat (bukan username
 // Pesaner), penerima pesan tetap diketik manual — thread percakapan
-// dikelompokkan berdasarkan username yang diketik di kolom ini.
+// dikelompokkan berdasarkan username yang diketik/dipilih di sini.
+//
+// Untuk mencegah penerima terhapus tidak sengaja (misal kepencet tombol
+// Hapus/Backspace di tengah percakapan), begitu user memilih salah satu
+// hasil pencarian, username tersebut "dikunci" (input disembunyikan, diganti
+// kartu read-only). Untuk ganti penerima, user harus menekan tombol
+// "Ganti" secara eksplisit — dan bisa "Batal" untuk kembali ke penerima
+// sebelumnya kalau berubah pikiran.
+let p2pLockedRecipient = null;   // {username, name} saat sudah dikunci
+let p2pPreviousRecipient = null; // dipakai tombol "Batal" setelah tekan "Ganti"
+let p2pSearchTimeout = null;
+
 function currentP2pRecipient() {
+  if (p2pLockedRecipient) return p2pLockedRecipient.username;
   return document.getElementById('p2p-recipient-username').value.trim();
 }
 
 function onP2pRecipientChanged() {
+  const query = document.getElementById('p2p-recipient-username').value.trim();
+  clearTimeout(p2pSearchTimeout);
+  const box = document.getElementById('p2p-recipient-suggestions');
+  if (query.length < 3) {
+    box.classList.add('hidden');
+    box.innerHTML = '';
+  } else {
+    p2pSearchTimeout = setTimeout(() => searchP2pRecipients(query), 300);
+  }
   renderP2pThread();
   p2pUpdateReadyState();
+}
+
+async function searchP2pRecipients(query) {
+  const box = document.getElementById('p2p-recipient-suggestions');
+  try {
+    const res = await apiCall('searchUsers', { query, excludeUsername: currentUser.username });
+    const users = res.users || [];
+    // Query mungkin sudah berubah (atau input sudah dikunci) selagi menunggu respons.
+    if (p2pLockedRecipient || document.getElementById('p2p-recipient-username').value.trim() !== query) return;
+    if (!users.length) {
+      box.innerHTML = '<div class="p-3 text-xs text-on-surface-muted text-center">Tidak ada user ditemukan</div>';
+      box.classList.remove('hidden');
+      return;
+    }
+    box.innerHTML = users.map(u => `
+      <div onmousedown="event.preventDefault(); selectP2pRecipient('${escHtml(u.username).replace(/'/g,"\\'")}', '${escHtml(u.name).replace(/'/g,"\\'")}')"
+        class="flex items-center gap-2 p-2 cursor-pointer" style="border-bottom:1px solid #F3F4F6;" onmouseover="this.style.background='#F9FAFB'" onmouseout="this.style.background=''">
+        <img src="${resolveAvatarUrl({ name: u.name, avatarUrl: u.avatarUrl })}" class="avatar w-8 h-8 flex-shrink-0"/>
+        <div class="min-w-0">
+          <p class="font-bold text-xs truncate">${escHtml(u.name)}</p>
+          <p class="text-[11px] text-on-surface-muted truncate">@${escHtml(u.username)}</p>
+        </div>
+      </div>`).join('');
+    box.classList.remove('hidden');
+  } catch (e) { /* biarkan dropdown tertutup kalau pencarian gagal */ }
+}
+
+// Dipanggil saat user memilih salah satu hasil pencarian.
+function selectP2pRecipient(username, name) {
+  p2pLockedRecipient = { username, name };
+  document.getElementById('p2p-recipient-username').value = '';
+  document.getElementById('p2p-recipient-suggestions').classList.add('hidden');
+  document.getElementById('p2p-recipient-suggestions').innerHTML = '';
+  document.getElementById('p2p-recipient-input-wrap').classList.add('hidden');
+  document.getElementById('p2p-recipient-cancel-btn').classList.add('hidden');
+  document.getElementById('p2p-recipient-locked-name').textContent = name || username;
+  document.getElementById('p2p-recipient-locked-username').textContent = '@' + username;
+  document.getElementById('p2p-recipient-locked').classList.remove('hidden');
+  renderP2pThread();
+  p2pUpdateReadyState();
+}
+
+// Tombol "Ganti": buka lagi kolom pencarian, simpan penerima lama supaya
+// bisa dibatalkan.
+function unlockP2pRecipient() {
+  p2pPreviousRecipient = p2pLockedRecipient;
+  p2pLockedRecipient = null;
+  document.getElementById('p2p-recipient-locked').classList.add('hidden');
+  document.getElementById('p2p-recipient-input-wrap').classList.remove('hidden');
+  document.getElementById('p2p-recipient-cancel-btn').classList.toggle('hidden', !p2pPreviousRecipient);
+  const input = document.getElementById('p2p-recipient-username');
+  input.value = '';
+  input.focus();
+  renderP2pThread();
+  p2pUpdateReadyState();
+}
+
+// Tombol "Batal, pakai penerima sebelumnya": kembalikan kunci ke penerima
+// yang tadi sebelum menekan "Ganti".
+function cancelP2pRecipientChange() {
+  if (!p2pPreviousRecipient) return;
+  selectP2pRecipient(p2pPreviousRecipient.username, p2pPreviousRecipient.name);
+  p2pPreviousRecipient = null;
+}
+
+function onP2pRecipientBlur() {
+  // Tutup dropdown sedikit ditunda supaya klik/onmousedown pada item
+  // sempat kejalan lebih dulu sebelum blur menyembunyikannya.
+  setTimeout(() => {
+    document.getElementById('p2p-recipient-suggestions').classList.add('hidden');
+  }, 150);
+  const input = document.getElementById('p2p-recipient-username');
+  input.value = input.value.trim();
+  onP2pRecipientChanged();
 }
 
 // ---- Ready-to-send state: single source of truth for whether sending is
@@ -2974,7 +3764,8 @@ function p2pUpdateReadyState() {
   let recipient = currentP2pRecipient();
 
   // Auto-strip @ if user types it, for consistency with normalizeUsername in Kotlin
-  if (recipient.startsWith('@')) {
+  // (hanya berlaku saat kolom pencarian aktif, bukan saat penerima sudah dikunci).
+  if (!p2pLockedRecipient && recipient.startsWith('@')) {
     recipient = recipient.substring(1);
     document.getElementById('p2p-recipient-username').value = recipient;
   }
@@ -3349,8 +4140,8 @@ function searchNewChatUsers() {
       const users = res.users || [];
       empty.classList.toggle('hidden', users.length > 0);
       results.innerHTML = users.map(u => `
-        <div class="chat-list-item" onclick="startChatWithUser('${u.username}', '${escHtml(u.name).replace(/'/g,"\\'")}')">
-          <img src="${avatarUrl(u.name)}" class="avatar w-10 h-10 flex-shrink-0"/>
+        <div class="chat-list-item" onclick="startChatWithUser('${u.username}', '${escHtml(u.name).replace(/'/g,"\\'")}', '${escHtml(u.avatarUrl||'').replace(/'/g,"\\'")}')">
+          <img src="${resolveAvatarUrl({ name: u.name, avatarUrl: u.avatarUrl })}" class="avatar w-10 h-10 flex-shrink-0"/>
           <div class="flex-1 min-w-0">
             <p class="font-bold text-sm truncate">${escHtml(u.name)}</p>
             <p class="text-xs text-on-surface-muted truncate">@${escHtml(u.username)}</p>
@@ -3363,9 +4154,9 @@ function searchNewChatUsers() {
   }, 300);
 }
 
-function startChatWithUser(username, name) {
+function startChatWithUser(username, name, avUrl) {
   closeNewChatModal();
-  openChatThread(username, name);
+  openChatThread(username, name, avUrl);
 }
 
 document.addEventListener('DOMContentLoaded', () => {

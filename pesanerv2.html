@@ -273,10 +273,19 @@
       <!-- ===== PROFILE TAB ===== -->
       <div id="tab-profile" class="hidden">
         <!-- Cover -->
-        <div class="cover-placeholder"></div>
+        <div id="profile-cover" class="cover-placeholder" style="position:relative;background-size:cover;background-position:center;">
+          <button id="btn-change-cover" onclick="triggerCoverUpload()" class="hidden" style="position:absolute;right:10px;bottom:10px;background:rgba(0,0,0,.45);color:#fff;border:none;border-radius:999px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+            <span class="material-symbols-outlined" style="font-size:18px;">photo_camera</span>
+          </button>
+        </div>
+        <input type="file" id="cover-file-input" accept="image/*" class="hidden" onchange="onCoverFileSelected(event)"/>
+        <input type="file" id="avatar-file-input" accept="image/*" class="hidden" onchange="onAvatarFileSelected(event)"/>
         <div class="max-w-[600px] mx-auto px-4 relative">
-          <div class="absolute -top-12 left-4">
+          <div class="absolute -top-12 left-4" style="position:relative;">
             <img id="profile-avatar" src="" class="avatar w-24 h-24 border-4 border-white shadow"/>
+            <button id="btn-change-avatar" onclick="triggerAvatarUpload()" class="hidden" style="position:absolute;right:-2px;bottom:-2px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:999px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+              <span class="material-symbols-outlined" style="font-size:15px;">photo_camera</span>
+            </button>
           </div>
           <div class="flex justify-end pt-3 pb-2">
             <button id="btn-edit-profile" onclick="openEditProfileModal()" class="btn-outline text-sm" data-i18n="btn_edit_profile">Edit Profil</button>
@@ -1418,6 +1427,12 @@ let postPrivacy = 'public';
 function avatarUrl(name) {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name||'U')}&background=0077CC&color=fff&size=128&bold=true`;
 }
+// Pakai foto profil asli kalau user sudah punya (avatarUrl/url tersimpan di
+// sheet Users), kalau belum fallback ke avatar generate otomatis dari nama.
+function resolveAvatarUrl(userLike) {
+  if (userLike && userLike.avatarUrl) return userLike.avatarUrl;
+  return avatarUrl(userLike && userLike.name);
+}
 
 function timeAgo(dateStr) {
   const d = new Date(dateStr);
@@ -1674,7 +1689,7 @@ function initApp() {
   document.getElementById('app-main').style.display = 'block';
 
   // Update UI with user data
-  const av = avatarUrl(currentUser.name);
+  const av = resolveAvatarUrl(currentUser);
   document.getElementById('header-avatar').src = av;
   document.getElementById('feed-avatar').src = av;
   document.getElementById('post-modal-avatar').src = av;
@@ -3499,17 +3514,21 @@ async function loadProfile() {
   document.getElementById('btn-edit-profile').classList.toggle('hidden', !isOwn);
   document.getElementById('btn-follow-user').classList.toggle('hidden', isOwn);
   document.getElementById('btn-chat-user').classList.toggle('hidden', isOwn);
+  document.getElementById('btn-change-avatar').classList.toggle('hidden', !isOwn);
+  document.getElementById('btn-change-cover').classList.toggle('hidden', !isOwn);
 
   if (isOwn) {
     document.getElementById('profile-name').textContent = currentUser.name || '';
     document.getElementById('profile-username-display').textContent = '@' + (currentUser.username || '');
     document.getElementById('profile-bio').textContent = currentUser.bio || '';
-    document.getElementById('profile-avatar').src = avatarUrl(currentUser.name);
+    document.getElementById('profile-avatar').src = resolveAvatarUrl(currentUser);
+    setProfileCoverBackground(currentUser.coverUrl);
     renderProfileContacts(getCurrentContacts());
   } else {
     document.getElementById('profile-name').textContent = '';
     document.getElementById('profile-bio').textContent = '';
     document.getElementById('profile-contacts').innerHTML = '';
+    setProfileCoverBackground('');
   }
 
   // Ambil data profil (nama/bio/kontak untuk orang lain, + info follow untuk siapa saja)
@@ -3521,8 +3540,19 @@ async function loadProfile() {
         document.getElementById('profile-name').textContent = p.name || '';
         document.getElementById('profile-username-display').textContent = '@' + (p.username || '');
         document.getElementById('profile-bio').textContent = p.bio || '';
-        document.getElementById('profile-avatar').src = avatarUrl(p.name);
+        document.getElementById('profile-avatar').src = resolveAvatarUrl(p);
+        setProfileCoverBackground(p.coverUrl);
         renderProfileContacts(p.contacts);
+      } else {
+        // Sinkronkan avatarUrl/coverUrl terbaru dari server ke currentUser
+        currentUser.avatarUrl = p.avatarUrl || '';
+        currentUser.coverUrl = p.coverUrl || '';
+        localStorage.setItem('pesaner_user', JSON.stringify(currentUser));
+        document.getElementById('profile-avatar').src = resolveAvatarUrl(currentUser);
+        document.getElementById('header-avatar').src = resolveAvatarUrl(currentUser);
+        document.getElementById('feed-avatar').src = resolveAvatarUrl(currentUser);
+        document.getElementById('post-modal-avatar').src = resolveAvatarUrl(currentUser);
+        setProfileCoverBackground(currentUser.coverUrl);
       }
       document.getElementById('profile-followers-count').textContent = p.followersCount || 0;
       document.getElementById('profile-following-count').textContent = p.followingCount || 0;
@@ -3633,6 +3663,77 @@ function openEditProfileModal() {
   document.getElementById('edit-profile-modal').classList.remove('hidden');
 }
 function closeEditProfileModal() { document.getElementById('edit-profile-modal').classList.add('hidden'); }
+
+// ======= FOTO PROFIL & FOTO COVER =======
+function setProfileCoverBackground(url) {
+  const el = document.getElementById('profile-cover');
+  if (url) {
+    el.style.backgroundImage = `url('${url}')`;
+  } else {
+    el.style.backgroundImage = '';
+  }
+}
+
+function triggerAvatarUpload() { document.getElementById('avatar-file-input').click(); }
+function triggerCoverUpload() { document.getElementById('cover-file-input').click(); }
+
+async function onAvatarFileSelected(event) {
+  const file = event.target.files && event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  if (!file.type || file.type.indexOf('image/') !== 0) {
+    showToast(t('toast_photo_invalid') || 'File harus berupa gambar', 'error');
+    return;
+  }
+  await uploadProfilePhotoFile(file, 'avatar');
+}
+
+async function onCoverFileSelected(event) {
+  const file = event.target.files && event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  if (!file.type || file.type.indexOf('image/') !== 0) {
+    showToast(t('toast_photo_invalid') || 'File harus berupa gambar', 'error');
+    return;
+  }
+  await uploadProfilePhotoFile(file, 'cover');
+}
+
+async function uploadProfilePhotoFile(file, photoType) {
+  const btnId = photoType === 'avatar' ? 'btn-change-avatar' : 'btn-change-cover';
+  const btn = document.getElementById(btnId);
+  if (btn) btn.disabled = true;
+  showToast(photoType === 'avatar' ? (t('toast_uploading_avatar') || 'Mengunggah foto profil...') : (t('toast_uploading_cover') || 'Mengunggah foto sampul...'));
+  try {
+    const base64Data = await fileToBase64(file);
+    const res = await apiPostJson('uploadProfilePhoto', {
+      username: currentUser.username,
+      photoType,
+      base64Data,
+      fileName: file.name || (photoType + '_' + Date.now()),
+      mimeType: file.type || 'image/jpeg'
+    });
+    if (res.success) {
+      if (photoType === 'avatar') {
+        currentUser.avatarUrl = res.url;
+        document.getElementById('profile-avatar').src = res.url;
+        document.getElementById('header-avatar').src = res.url;
+        document.getElementById('feed-avatar').src = res.url;
+        document.getElementById('post-modal-avatar').src = res.url;
+      } else {
+        currentUser.coverUrl = res.url;
+        setProfileCoverBackground(res.url);
+      }
+      localStorage.setItem('pesaner_user', JSON.stringify(currentUser));
+      showToast(photoType === 'avatar' ? (t('toast_avatar_updated') || 'Foto profil diperbarui') : (t('toast_cover_updated') || 'Foto sampul diperbarui'));
+    } else {
+      showToast(translateServerMsg(res.message) || t('toast_generic_fail'), 'error');
+    }
+  } catch (e) {
+    showToast(t('toast_generic_fail'), 'error');
+  }
+  if (btn) btn.disabled = false;
+}
 
 async function saveProfile() {
   const name = document.getElementById('edit-name').value.trim();

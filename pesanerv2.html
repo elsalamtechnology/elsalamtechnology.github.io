@@ -2403,12 +2403,38 @@ function chatStatusHtml(m) {
 
 // Isi bubble sesuai tipe pesan. Tipe selain 'text' selalu punya fileUrl
 // (kecuali 'contact', yang datanya ada di content sebagai JSON string).
+// Dipanggil lewat onerror="" di <img> bubble chat kalau thumbnail Google
+// Drive gagal dimuat (jaringan lambat, atau file belum selesai diproses
+// Google). Daripada menampilkan ikon gambar patah selamanya, kita ganti
+// jadi kotak "Ketuk untuk buka gambar" yang mengarah ke halaman Drive-nya,
+// dengan id file diambil dari URL yang gagal tadi.
+function handleChatImageError(imgEl) {
+  const failedUrl = imgEl.src;
+  const idMatch = failedUrl.match(/[?&]id=([^&]+)/);
+  const fileId = idMatch ? idMatch[1] : null;
+  const fallbackHref = fileId ? ('https://drive.google.com/file/d/' + fileId + '/view') : failedUrl;
+
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'width:220px;padding:14px;border-radius:12px;background:rgba(0,0,0,0.06);text-align:center;';
+  wrapper.innerHTML = `
+    <span class="material-symbols-outlined" style="font-size:28px;opacity:0.6;">broken_image</span>
+    <div class="text-xs mt-1" style="opacity:0.7;">Gambar gagal dimuat</div>
+    <a href="${fallbackHref}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold" style="color:#0077CC;text-decoration:underline;">Buka di Google Drive</a>
+  `;
+  const link = imgEl.closest('a');
+  if (link && link.parentNode) {
+    link.parentNode.replaceChild(wrapper, link);
+  } else {
+    imgEl.replaceWith(wrapper);
+  }
+}
+
 function chatBubbleContent(m) {
   const type = m.type || 'text';
 
   if (type === 'image') {
     return `<a href="${escHtml(m.fileUrl)}" target="_blank" rel="noopener noreferrer">
-      <img src="${escHtml(m.fileUrl)}" style="max-width:220px;max-height:280px;border-radius:12px;display:block;object-fit:cover;"/>
+      <img src="${escHtml(m.fileUrl)}" style="max-width:220px;max-height:280px;border-radius:12px;display:block;object-fit:cover;" onerror="handleChatImageError(this)"/>
     </a>${m.content ? `<div class="mt-1.5">${linkifyContent(m.content)}</div>` : ''}`;
   }
 
